@@ -64,6 +64,7 @@ func (pg *ProcessGroup) CreateProcess(cmdline []string) *ProcessInstance {
 
 	var instance *ProcessInstance
 	if isLeader {
+		// TODO: 用golang实现这个helper
 		instance = NewProcessInstance(append([]string{"bash", "-c", startupScript, "--"}, cmdline...))
 		instance.SetEnv(append(pg.env, "_CHDIR_="+pg.cwd, "OVERLAY_ROOT="+pg.overlayRoot))
 		instance.SetSysProcAttr(func(attr *syscall.SysProcAttr) {

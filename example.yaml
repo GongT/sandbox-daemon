@@ -6,90 +6,23 @@ exec:
     - echo hello world
   cwd: /root
 
-  # 如何停止此进程，默认是 kill SIGTERM
-  stop:
-    method: kill # "kill" or "command"
+# 如何停止此进程，默认是 kill SIGTERM
+stop:
+  method: kill # "kill" or "command"
 
-    # 当 method="kill"
-    signal: SIGTERM
+  # 当 method="kill"
+  signal: SIGTERM
 
-    # 当 method="command"
-    command:
-      - /bin/bash
-      - -c
-      - echo "stop"
+  # 当 method="command"
+  command:
+    - /bin/bash
+    - -c
+    - echo "stop"
 
-    # 超时秒数，超时后 kill -9
-    timeout: 10
+  # 超时秒数，超时后 kill -9
+  timeout: 10
 
-# 是否转发退出码，如果设为false，则daemon永远以0退出
-exit_code: true
-
-# 是否创建mount namespace，默认是false
-mount_namespace: false
-
-# 启动前执行
-prestart:
-  - /bin/bash
-  - -c
-  - echo "pre start"
-
-# 停止后执行，只有主程序曾经满足过wait条件，退出后才会执行poststop
-# exit_code变量保存了主程序的退出码（无关于exit_code配置项）
-poststop:
-  - /bin/bash
-  - -c
-  - echo 'post stop: the program exited with code $exit_code'
-
-# 是否转发信号，默认是stop
-# "passthrough"、true
-# "ignore"、false
-# stop -> 收到时执行上面定义的stop
-sigint: "passthrough" # true|ignore|stop
-sigterm: "passthrough" # true|ignore|stop
-
-# 如何判断主程序是否启动成功
-# 任何条件都要求程序还在运行，所以不可以是fork类型的程序
-# 默认是 sleep 1
-# type必填，对应配置项为必填，其他项不可存在
-wait:
-  type: http|socket|file|output|sleep
-  
-  # file: 等待此文件出现，判断在根namespace下进行
-  path: /tmp/notify.txt
-
-  # socket: 通过ss命令检查端口、unix socket是否被监听
-  address: tcp://localhost:1234
-# address: unix:///tmp/notify.sock
-
-  # http: 发送http get请求，返回200则认为启动成功
-  address: http://localhost:8080/notify
-  
-  # output: 等待stdout/stderr输出匹配的内容
-  channel: stdout|stderr|any
-  match: /^Server started at/
-
-  # sleep: 5秒后启动成功
-  sleep: 5
-
-stdio:
-  # 如果设为true，则daemon收到的输入将发往主程序
-  stdin: false
-
-  # 设置指定的文件描述符的重定向方式，值为数组（只有一项可以是字符串）
-  # 特殊值 inherit: 复制到daemon的stdio，stdout/stderr默认、all不支持
-  stdout:
-    - https://example.com/log
-  stderr:
-
-    
-  # all是stdin+stdout合并结果，默认无
-  all:
-    - file:///tmp/main.log?append=true
-
-signals:
-  stop: SIGINT
-
+# 环境变量操作，影响本程序和其他通过exec启动的程序
 environments:
   add: 
     # 也可以是键值对对象
@@ -101,3 +34,79 @@ environments:
   whitelist:
     - PATH
     - HOME
+
+namespace:
+  overlay_root: /tmp/overlay_root
+
+hooks:
+  # 主程序已经在运行之后执行的命令，无默认
+  # 额外环境变量: MAIN_PID
+  running:
+    cmdline:
+      - /bin/bash
+      - -c
+      - echo "post exec"
+    # 是否使用主程序的namespace和环境变量, 默认是true
+    namespace: false
+    env: true
+  
+  # 主程序退出之后执行的命令，无默认
+  # 额外环境变量: EXIT_CODE
+  stopped:
+    cmdline:
+      - /bin/bash
+      - -c
+      - 'echo "post stop: the program exited with code $EXIT_CODE"'
+    env: true
+
+daemon:
+  # 是否转发退出码，如果设为false，则daemon永远以0退出
+  exit_code: true
+
+  # 是否转发信号，默认是stop
+  # "passthrough"、true
+  # "ignore"、false
+  # stop -> 收到时执行上面定义的stop
+  sigint: "stop" # true|ignore|stop
+  sigterm: "stop" # true|ignore|stop
+
+  stdio:
+    # 如果设为true，则daemon收到的输入将发往主程序
+    stdin: false
+
+    # 设置指定的文件描述符的重定向方式，值为数组（只有一项可以是字符串）
+    # 特殊值 inherit: 复制到daemon的stdio，stdout/stderr默认、all不支持
+    stdout:
+      - https://example.com/log
+    stderr:
+
+      
+    # all是stdin+stdout合并结果，默认无
+    all:
+      - file:///tmp/main.log?append=true
+
+# 如何判断主程序是否启动成功
+# 任何条件都要求程序还在运行，所以不可以是fork类型的程序
+# 默认是 sleep 1
+# 多个条件是与的关系
+# wait:
+#   # file: 等待此文件出现，判断在根namespace下进行
+#   path: /tmp/notify.txt
+# 
+#   # socket: 通过ss命令检查端口、unix socket是否被监听
+#   address: tcp://localhost:1234
+# # address: unix:///tmp/notify.sock
+# 
+#   # http: 发送http get请求，返回200则认为启动成功
+#   address: http://localhost:8080/notify
+#   
+#   # output: 等待stdout/stderr输出匹配的内容
+#   channel: stdout|stderr|any
+#   match: /^Server started at/
+# 
+#   # sleep: 5秒后启动成功
+#   sleep: 5
+# 
+#   # 设置等待超时，默认是30秒
+#   # 多个条件的等待操作是并行的
+#   timeout: 30

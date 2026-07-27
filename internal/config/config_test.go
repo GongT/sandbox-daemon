@@ -1,126 +1,98 @@
 package config
 
 import (
-	"fmt"
-	"strings"
+	"log"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/goforj/godump"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
+	"github.com/stretchr/testify/require"
 )
 
-type exampleConfig struct {
-	stringVal  string           `config:"a.value"`
-	stringsVal []string         `config:"a.value2"`
-	numberVal  int              `config:"a.number"`
-	numbersVal []int            `config:"a.number2"`
-	boolVal    bool             `config:"a.bool"`
-	subConfig  exampleSubConfig `config:"b"`
-	rootConfig exampleConfig2
+type testConfigPart1 struct {
+	Name        string            `config:"name"`
+	Enabled     bool              `config:"enabled"`
+	Commandline []string          `config:"commandline"`
+	Environment map[string]string `config:"environment"`
+	// Timeout     time.Duration     `config:"timeoutMs"`
+	// Urls        []url.URL         `config:"urls"`
 
-	mapped       map[string]uint32 `config:"mapped"`
-	customLoader environmentLoader `config:"env"`
+	BuildConfig testDeep1
+
+	UnrelatedField string
+	hiddenField    string `config:"hidden_field"`
 }
 
-type environmentLoader struct {
-	values map[string]string
+type testConfigPart2 struct {
+	Objects []testObject      `config:"objects"`
+	MapA    mapAlias          `config:"map_field"`
+	MapB    map[string]string `config:"map_field"`
 }
 
-func (c *environmentLoader) Unmarshal(node *yaml.Node) error {
-	if c.values == nil {
-		c.values = map[string]string{}
-	}
-
-	if node.Kind == yaml.MappingNode {
-		return node.Decode(c.values)
-	}
-
-	arr := []string{}
-
-	if err := LoadArray(node, &arr); err != nil {
-		return err
-	}
-
-	for _, v := range arr {
-		parts := strings.SplitN(v, "=", 2)
-		if len(parts) == 2 {
-			c.values[parts[0]] = parts[1]
-		} else {
-			return fmt.Errorf("无法解析环境变量: %s", v)
-		}
-	}
-
-	return nil
+type testDeep1 struct {
+	Deep testDeep2
 }
 
-type exampleSubConfig struct {
-	stringVal string `config:"value"`
+type testDeep2 struct {
+	Value string `config:"root_value"`
 }
 
-type exampleConfig2 struct {
-	unknownField int
-	x            int `config:"x"`
-}
+const testConfigContent = `
+name: "value-of-name"
+enabled: true
+commandline:
+  - "arg1"
+  - "arg2"
+environment:
+  Key1: "value1"
+  key2: "value2"
+timeoutMs: 1000
+urls: "https://example.com/path?query=1"
+hidden_field: "should not be loaded"
+objects:
+  - id: 1
+    name: "object1"
+  - id: 2
+    name: "object2"
+map_field:
+  keyA: "valueA"
+  keyB: "valueB"
 
-func TestConfig(t *testing.T) {
-	exampleYamlContent := `
-a:
-  value: "hello"
-  value2: "world"
-  number: "42"
-  number2: 
-    - 43
-    - "44"
-  bool: true
-  bool: 1
-
-mapped:
-  key1: 100
-  key2: 200
-
-b:
-  value: "subconfig"
-  unexpected: "field"
-  
-env:
-  - "PATH=/usr/bin"
-  - "HOME=/home/user"
-
-x: 10
-
-unexpected1: true
-unexpected2:
-  v1: "123"
-  v2: abc
-
+root_value: "load-to-deep"
 `
 
-	cfg := &exampleConfig{}
-	cfg.rootConfig.unknownField = 999
+func TestLoadConfigContent(t *testing.T) {
+	log.SetOutput(t.Output())
 
-	unknownFields, err := LoadConfigObject([]byte(exampleYamlContent), cfg)
-	if err != nil {
-		err = fmt.Errorf("加载配置失败: %+w", err)
-		t.Fatalf("%+v", err)
+	part1 := testConfigPart1{
+		Environment: map[string]string{
+			"HELLO": "WORLD",
+		},
 	}
+	var part2 testConfigPart2
 
-	spew.Dump(cfg)
+	err := LoadConfigContent(testConfigContent, &part1, &part2)
+	assert.NoError(t, err)
 
-	assert.Equal(t, "hello", cfg.stringVal)
-	assert.Contains(t, cfg.stringsVal, "world")
-	assert.Equal(t, 42, cfg.numberVal)
-	assert.Contains(t, cfg.numbersVal, 43)
-	assert.Contains(t, cfg.numbersVal, 44)
-	assert.Equal(t, true, cfg.boolVal)
-	assert.Equal(t, "subconfig", cfg.subConfig.stringVal)
-	assert.Equal(t, 10, cfg.rootConfig.x)
-	assert.Equal(t, 999, cfg.rootConfig.unknownField)
-	assert.Equal(t, uint32(100), cfg.mapped["key1"])
-	assert.Equal(t, uint32(200), cfg.mapped["key2"])
-	assert.Equal(t, "/usr/bin", cfg.customLoader.values["PATH"])
-	assert.Equal(t, "/home/user", cfg.customLoader.values["HOME"])
-	assert.Contains(t, unknownFields, "unexpected1")
-	assert.Contains(t, unknownFields, "unexpected2")
-	assert.Contains(t, unknownFields, "b.unexpected")
+	godump.Fdump(t.Output(), part1, part2)
+
+	assert.Equal(t, "value-of-name", part1.Name)
+	assert.Equal(t, true, part1.Enabled)
+	assert.Equal(t, []string{"arg1", "arg2"}, part1.Commandline)
+	assert.Equal(t, map[string]string{"HELLO": "WORLD", "key1": "value1", "key2": "value2"}, part1.Environment)
+	// assert.Equal(t, time.Duration(1000)*time.Millisecond, part1.Timeout)
+	// require.Len(t, part1.Urls, 1)
+	// assert.Equal(t, "https://example.com/path?query=1", part1.Urls[0].String())
+	assert.Equal(t, "", part1.hiddenField)
+
+	require.Len(t, part2.Objects, 2)
+	assert.Equal(t, 1, part2.Objects[0].ID)
+	assert.Equal(t, "object1", part2.Objects[0].Name)
+	assert.Equal(t, 2, part2.Objects[1].ID)
+	assert.Equal(t, "object2", part2.Objects[1].Name)
+
+	assert.Equal(t, mapAlias{"keya": "valueA", "keyb": "valueB"}, part2.MapA)
+	assert.Equal(t, map[string]string{"keya": "valueA", "keyb": "valueB"}, part2.MapB)
+
+	assert.Equal(t, "load-to-deep", part1.BuildConfig.Deep.Value)
 }

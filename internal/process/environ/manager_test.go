@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/goforj/godump"
 	internalconfig "github.com/gongt/sandbox-daemon/internal/config"
 	"github.com/stretchr/testify/require"
 )
@@ -14,14 +14,13 @@ func TestEnvironmentManager(t *testing.T) {
 	require.NoError(t, err)
 
 	content := []byte(`
-environments:
-  add:
-    - HOME=/tmp
-  blacklist:
-    - LD_PRELOAD
-  whitelist:
-    - PATH
-    - HOME
+add:
+ - HOME=/tmp
+blacklist:
+ - LD_PRELOAD
+whitelist:
+ - PATH
+ - HOME
 `)
 
 	if unused, err := internalconfig.LoadConfigObject(content, cfg); err != nil || len(unused) > 0 {
@@ -36,7 +35,7 @@ environments:
 	require.NoError(t, err)
 
 	mapping := cfg.Snapshot()
-	spew.Dump(mapping)
+	godump.Fdump(t.Output(), mapping)
 
 	require.Equal(t, "string", reflect.TypeOf(mapping["PATH"]).String())
 	require.Equal(t, "/tmp", mapping["HOME"])

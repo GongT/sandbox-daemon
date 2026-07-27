@@ -1,69 +1,41 @@
 package config
 
-import (
-	"fmt"
-
-	"github.com/gongt/sandbox-daemon/internal/process/signal"
-)
-
-type StopMethod string
-
-const (
-	StopMethodKill    StopMethod = "kill"
-	StopMethodCommand StopMethod = "command"
-)
-
-type ExecConfig struct {
-	cmdline []string   `config:"exec.cmdline"`
-	cwd     string     `config:"exec.cwd"`
-	stop    StopConfig `config:"exec.stop"`
+type HookConfig struct {
+	// 命令行
+	cmdline []string `config:"cmdline"`
+	// 工作目录
+	cwd string `config:"cwd"`
+	// 是否使用主程序的环境变量，默认是true
+	env bool `config:"env"`
 }
 
-type StopConfig struct {
-	method  StopMethod        `config:"method"`
-	command []string          `config:"command"`
-	signal  signal.SignalName `config:"signal"`
-	timeout uint              `config:"timeout"`
+type HookRunningConfig struct {
+	HookConfig
+
+	// 是否使用主程序的namespace和环境变量，默认是true
+	namespace bool `config:"namespace"`
 }
 
-func New() *ExecConfig {
-	cfg := &ExecConfig{
-		stop: StopConfig{
-			method:  StopMethodCommand,
-			signal:  "",
-			timeout: 10,
-		},
-	}
-	return cfg
+type hooksConfig struct {
+	// 主程序已经在运行之后执行的命令
+	running *HookRunningConfig `config:"hooks.running"`
+	// 主程序退出之后执行的命令
+	stopped *HookConfig `config:"hooks.stopped"`
 }
 
-func (cfg ExecConfig) Validate() error {
-	switch cfg.stop.method {
-	case StopMethodKill:
-		if cfg.stop.signal == "" {
-			cfg.stop.signal = "SIGTERM"
-		} else {
-			if !cfg.stop.signal.IsValid() {
-				return fmt.Errorf("未知停止信号: %s", cfg.stop.signal)
-			}
-		}
-		if len(cfg.stop.command) > 0 {
-			return fmt.Errorf("停止命令方式不支持指定命令")
-		}
-	case StopMethodCommand:
-		if len(cfg.stop.command) == 0 {
-			return fmt.Errorf("停止命令不能为空")
-		}
-		if cfg.stop.signal != "" {
-			return fmt.Errorf("停止命令方式不支持指定信号")
-		}
-	default:
-		return fmt.Errorf("未知停止方式: %s, 应为 %s 或 %s", cfg.stop.method, StopMethodKill, StopMethodCommand)
-	}
+type LifecycleConfig struct {
+	exec         ExecConfig
+	stop         StopConfig
+	environments EnvironmentsConfig
+	hooks        hooksConfig
+}
 
-	if len(cfg.cmdline) == 0 {
-		return fmt.Errorf("执行命令不能为空")
+func (c *LifecycleConfig) Validate() error {
+	if err := c.exec.Validate(); err != nil {
+		return err
 	}
-
+	if err := c.stop.Validate(); err != nil {
+		return err
+	}
 	return nil
 }

@@ -25,7 +25,7 @@
 ### 额外初始化
 
 1. 主程序执行前运行指定的初始化命令或脚本
-1. 创建命名空间、挂载文件系统、切换用户
+1. 创建命名空间、挂载文件系统
 1. 等待指定的文件、端口就绪
 
 ### 重启与热更新
@@ -103,7 +103,7 @@ sb attach [-dir /var/run/sandbox-daemon] [-ro]
 * 如果主程序**未**在运行，则主程序退出**后**此程序会收到SIGTERM
 停止动作超时会被KILL
 
-* -pipe: 隐含-wait，桥接当前终端的stdin、stdout、stderr，默认无stdin；stdout、stderr输出到和主程序相同的地方
+* -pipe: 隐含-wait，桥接当前终端的stdin、stdout、stderr。不设置（默认）则: 无stdin; stdout、stderr输出到和主程序相同的地方
 * -wait: 等待程序退出，返回退出码
 * -nons: 使用根namespace，而不是主程序的
 * -noenv: 不应用主程序的环境变量设置
