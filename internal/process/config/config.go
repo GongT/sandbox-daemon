@@ -2,25 +2,25 @@ package config
 
 type HookConfig struct {
 	// 命令行
-	cmdline []string `config:"cmdline"`
+	Cmdline []string `config:"cmdline"`
 	// 工作目录
-	cwd string `config:"cwd"`
+	Cwd string `config:"cwd"`
 	// 是否使用主程序的环境变量，默认是true
-	env bool `config:"env"`
+	Env bool `config:"env"`
 }
 
 type HookRunningConfig struct {
 	HookConfig
 
-	// 是否使用主程序的namespace和环境变量，默认是true
-	namespace bool `config:"namespace"`
+	// 是否使用主程序的Namespace和环境变量，默认是true
+	Namespace bool `config:"namespace"`
 }
 
 type hooksConfig struct {
 	// 主程序已经在运行之后执行的命令
-	running *HookRunningConfig `config:"hooks.running"`
+	Running *HookRunningConfig `config:"hooks.running"`
 	// 主程序退出之后执行的命令
-	stopped *HookConfig `config:"hooks.stopped"`
+	Stopped *HookConfig `config:"hooks.stopped"`
 }
 
 type LifecycleConfig struct {

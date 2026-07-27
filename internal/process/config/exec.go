@@ -12,12 +12,12 @@ const (
 )
 
 type ExecConfig struct {
-	cmdline []string `config:"exec.cmdline"`
-	cwd     string   `config:"exec.cwd"`
+	Cmdline []string `config:"exec.cmdline"`
+	Cwd     string   `config:"exec.cwd"`
 }
 
 func (cfg ExecConfig) Validate() error {
-	if len(cfg.cmdline) == 0 {
+	if len(cfg.Cmdline) == 0 {
 		return fmt.Errorf("执行命令不能为空")
 	}
 

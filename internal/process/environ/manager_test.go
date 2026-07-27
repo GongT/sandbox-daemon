@@ -1,40 +1,41 @@
 package environ
 
 import (
+	"log"
 	"reflect"
 	"testing"
 
 	"github.com/goforj/godump"
 	internalconfig "github.com/gongt/sandbox-daemon/internal/config"
+	"github.com/gongt/sandbox-daemon/internal/process/config"
+	"github.com/gongt/sandbox-daemon/internal/tools"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEnvironmentManager(t *testing.T) {
-	cfg, err := NewEnvironmentManager()
+	var err error
+	log.SetOutput(t.Output())
+
+	cfg := config.EnvironmentsConfig{}
+
+	content := `
+environments:
+  add:
+    HOME: /tmp
+  blacklist:
+  - LD_PRELOAD
+  whitelist:
+  - PATH
+  - HOME
+`
+
+	err = internalconfig.LoadConfigContent(content, &cfg)
 	require.NoError(t, err)
+	require.Equal(t, tools.EnvironmentMap{"HOME": "/tmp"}, cfg.Add)
 
-	content := []byte(`
-add:
- - HOME=/tmp
-blacklist:
- - LD_PRELOAD
-whitelist:
- - PATH
- - HOME
-`)
+	mgr := New(&cfg)
 
-	if unused, err := internalconfig.LoadConfigObject(content, cfg); err != nil || len(unused) > 0 {
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(unused) > 0 {
-			t.Fatalf("未知配置项: %v", unused)
-		}
-	}
-
-	require.NoError(t, err)
-
-	mapping := cfg.Snapshot()
+	mapping := mgr.Snapshot()
 	godump.Fdump(t.Output(), mapping)
 
 	require.Equal(t, "string", reflect.TypeOf(mapping["PATH"]).String())

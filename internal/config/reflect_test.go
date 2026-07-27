@@ -39,25 +39,25 @@ type testCtx struct {
 	t *testing.T
 }
 
-func (ctx *testCtx) HasValue(tagPath []string) (bool, error) {
+func (ctx *testCtx) HasValue(tagPath ConfigPath) (bool, error) {
 	return true, nil
 }
 
-func (ctx *testCtx) GetArraySize(tagPath []string) (int, error) {
-	require.Len(ctx.t, tagPath, 1)
-	require.Contains(ctx.t, []string{"strings", "objects"}, tagPath[0])
+func (ctx *testCtx) GetArraySize(tagPath ConfigPath) (int, error) {
+	require.Equal(ctx.t, tagPath.Size, 1)
+	require.Contains(ctx.t, []string{"strings", "objects"}, tagPath.StringAt(0))
 	return 2, nil
 }
 
-func (ctx *testCtx) GetObjectKeys(tagPath []string) ([]string, error) {
-	require.Len(ctx.t, tagPath, 1)
-	require.Equal(ctx.t, "map", tagPath[0])
+func (ctx *testCtx) GetObjectKeys(tagPath ConfigPath) ([]string, error) {
+	require.Equal(ctx.t, tagPath.Size, 1)
+	require.Equal(ctx.t, "map", tagPath.StringAt(0))
 	return []string{"keyA", "keyB"}, nil
 }
 
-func (ctx *testCtx) GetValue(typ reflect.Type, tagPath []string) (string, error) {
+func (ctx *testCtx) GetValue(typ reflect.Type, tagPath ConfigPath) (string, error) {
 	require.NotEmpty(ctx.t, tagPath)
-	last := tagPath[len(tagPath)-1]
+	last := tagPath.StringAt(-1)
 	switch last {
 	case "keyA":
 		return "valueA", nil

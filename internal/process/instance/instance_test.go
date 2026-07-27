@@ -2,6 +2,7 @@ package instance
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -10,7 +11,9 @@ import (
 )
 
 func TestInstance(t *testing.T) {
-	proc := NewProcessInstance([]string{"echo", "hello"})
+	log.SetOutput(t.Output())
+
+	proc := New([]string{"echo", "hello"})
 	require.Equal(t, 0, proc.GetPid())
 
 	require.NoError(t, proc.Start())
@@ -26,7 +29,9 @@ func TestInstance(t *testing.T) {
 }
 
 func TestInstanceStop(t *testing.T) {
-	proc := NewProcessInstance([]string{"sleep", "infinity"})
+	log.SetOutput(t.Output())
+
+	proc := New([]string{"sleep", "infinity"})
 	require.NoError(t, proc.Start())
 
 	go func() {

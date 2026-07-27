@@ -1,17 +1,21 @@
-package instance
+package process_group
 
 import (
 	"bytes"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/gongt/sandbox-daemon/internal/process/instance"
 	"github.com/stretchr/testify/require"
 )
 
 func TestProcessGroup(t *testing.T) {
+	log.SetOutput(t.Output())
+
 	g := NewProcessGroup()
 
 	tmpDir := filepath.Join(os.TempDir(), "test")
@@ -57,12 +61,12 @@ func TestProcessGroup(t *testing.T) {
 	require.Equal(t, "Hello, World!", buff.String())
 	require.FileExists(t, filepath.Join(tmpDir, "xxx.txt"))
 
-	require.Equal(t, 1, len(g.child_processes.instances))
+	require.Equal(t, 1, g.child_processes.Size())
 
 	os.RemoveAll(tmpDir)
 }
 
-func test_output(instance *ProcessInstance) *bytes.Buffer {
+func test_output(instance *instance.ProcessInstance) *bytes.Buffer {
 	var outBuffer bytes.Buffer
 	instance.SetBeforeStartHook(func(c *exec.Cmd) {
 		c.Stdout = &outBuffer

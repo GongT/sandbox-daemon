@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"gitlab.com/tozd/go/errors"
 )
 
 func TranslateType(targetType reflect.Type) string {

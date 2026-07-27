@@ -17,7 +17,7 @@ type ReusableProcessInstance struct {
 	sysProcSetter func(attr *syscall.SysProcAttr)
 }
 
-func NewReusableProcessInstance() *ReusableProcessInstance {
+func NewReusable() *ReusableProcessInstance {
 	return &ReusableProcessInstance{}
 }
 
@@ -58,7 +58,7 @@ func (rpi *ReusableProcessInstance) IsRunning() bool {
 }
 
 func (rpi *ReusableProcessInstance) create() {
-	rpi.instance = NewProcessInstance(rpi.cmdline)
+	rpi.instance = New(rpi.cmdline)
 	rpi.instance.SetEnv(rpi.env)
 	rpi.instance.SetDir(rpi.dir)
 	if rpi.beforeStart != nil {

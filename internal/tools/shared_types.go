@@ -5,6 +5,8 @@ import (
 	"log"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type EnvironmentMap map[string]string
@@ -71,6 +73,7 @@ func (s Set[T]) Has(item T) bool {
 	return exists
 }
 
-func loadArray[T any](node any, ptr *[]T) error {
-	return nil
+func (s *Set[T]) FromString(content string) error {
+	log.Printf("Set: 从字符串加载集合:\n%s", content)
+	return errors.Errorf("test")
 }

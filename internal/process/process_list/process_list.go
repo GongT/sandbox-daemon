@@ -1,21 +1,25 @@
-package instance
+package process_list
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/gongt/sandbox-daemon/internal/process/instance"
+)
 
 // ProcessList 是一个进程列表，里面的元素是 *ProcessInstance
 type ProcessList struct {
-	instances []*ProcessInstance
+	instances []*instance.ProcessInstance
 	mu        sync.RWMutex
 }
 
-func NewProcessList() *ProcessList {
+func New() *ProcessList {
 	return &ProcessList{
-		instances: make([]*ProcessInstance, 0),
+		instances: make([]*instance.ProcessInstance, 0),
 		mu:        sync.RWMutex{},
 	}
 }
 
-func (pl *ProcessList) Register(instance *ProcessInstance) int {
+func (pl *ProcessList) Register(instance *instance.ProcessInstance) int {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()
 
@@ -40,7 +44,7 @@ func (pl *ProcessList) Register(instance *ProcessInstance) int {
 	return len(pl.instances)
 }
 
-func (pl *ProcessList) ReadAccess(access func([]*ProcessInstance)) {
+func (pl *ProcessList) ReadAccess(access func([]*instance.ProcessInstance)) {
 	pl.mu.RLock()
 	defer pl.mu.RUnlock()
 

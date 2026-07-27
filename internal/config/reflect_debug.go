@@ -3,7 +3,6 @@ package config
 import (
 	"log"
 	"reflect"
-	"strings"
 )
 
 type loggingContext struct {
@@ -12,9 +11,9 @@ type loggingContext struct {
 	oCtx ConfigFillContext
 }
 
-func (l *loggingContext) HasValue(tagPath []string) (bool, error) {
+func (l *loggingContext) HasValue(tagPath ConfigPath) (bool, error) {
 	if true {
-		log.Printf("[HasValue] %s", strings.Join(tagPath, "."))
+		log.Printf("[HasValue] %s", tagPath.JoinWithDot(""))
 	}
 	r, err := l.oCtx.HasValue(tagPath)
 
@@ -26,9 +25,9 @@ func (l *loggingContext) HasValue(tagPath []string) (bool, error) {
 	return r, err
 }
 
-func (l *loggingContext) GetArraySize(tagPath []string) (size int, err error) {
+func (l *loggingContext) GetArraySize(tagPath ConfigPath) (size int, err error) {
 	if true {
-		log.Printf("[getArraySize]  %s", strings.Join(tagPath, "."))
+		log.Printf("[getArraySize]  %s", tagPath.JoinWithDot(""))
 	}
 	size, err = l.oCtx.GetArraySize(tagPath)
 	if err != nil {
@@ -39,9 +38,9 @@ func (l *loggingContext) GetArraySize(tagPath []string) (size int, err error) {
 	return size, err
 }
 
-func (l *loggingContext) GetObjectKeys(tagPath []string) (keys []string, err error) {
+func (l *loggingContext) GetObjectKeys(tagPath ConfigPath) (keys []string, err error) {
 	if true {
-		log.Printf("[getObjectKeys] %s", strings.Join(tagPath, "."))
+		log.Printf("[getObjectKeys] %s", tagPath.JoinWithDot(""))
 	}
 	keys, err = l.oCtx.GetObjectKeys(tagPath)
 	if err != nil {
@@ -52,9 +51,9 @@ func (l *loggingContext) GetObjectKeys(tagPath []string) (keys []string, err err
 	return keys, err
 }
 
-func (l *loggingContext) GetValue(t reflect.Type, tagPath []string) (value string, err error) {
+func (l *loggingContext) GetValue(t reflect.Type, tagPath ConfigPath) (value string, err error) {
 	if true {
-		log.Printf("[getValue] %s | %s", strings.Join(tagPath, "."), t.String())
+		log.Printf("[getValue] %s | %s", tagPath.JoinWithDot(""), t.String())
 	}
 	value, err = l.oCtx.GetValue(t, tagPath)
 	if err != nil {

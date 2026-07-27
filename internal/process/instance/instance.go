@@ -18,7 +18,7 @@ type ProcessInstance struct {
 	beforeStart func(*exec.Cmd)
 }
 
-func NewProcessInstance(cmdline []string) *ProcessInstance {
+func New(cmdline []string) *ProcessInstance {
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 	if cmd.SysProcAttr == nil {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}

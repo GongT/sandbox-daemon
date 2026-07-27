@@ -7,34 +7,34 @@ import (
 )
 
 type StopConfig struct {
-	method  StopMethod        `config:"stop.method"`
-	command []string          `config:"stop.command"`
-	signal  signal.SignalName `config:"stop.signal"`
-	timeout uint              `config:"stop.timeout"`
+	Method  StopMethod        `config:"stop.method"`
+	Command []string          `config:"stop.command"`
+	Signal  signal.SignalName `config:"stop.signal"`
+	Timeout uint              `config:"stop.timeout"`
 }
 
 func (c *StopConfig) Validate() error {
-	switch c.method {
+	switch c.Method {
 	case StopMethodKill:
-		if c.signal == "" {
-			c.signal = "SIGTERM"
+		if c.Signal == "" {
+			c.Signal = "SIGTERM"
 		} else {
-			if !c.signal.IsValid() {
-				return fmt.Errorf("未知停止信号: %s", c.signal)
+			if !c.Signal.IsValid() {
+				return fmt.Errorf("未知停止信号: %s", c.Signal)
 			}
 		}
-		if len(c.command) > 0 {
+		if len(c.Command) > 0 {
 			return fmt.Errorf("停止命令方式不支持指定命令")
 		}
 	case StopMethodCommand:
-		if len(c.command) == 0 {
+		if len(c.Command) == 0 {
 			return fmt.Errorf("停止命令不能为空")
 		}
-		if c.signal != "" {
+		if c.Signal != "" {
 			return fmt.Errorf("停止命令方式不支持指定信号")
 		}
 	default:
-		return fmt.Errorf("未知停止方式: %s, 应为 %s 或 %s", c.method, StopMethodKill, StopMethodCommand)
+		return fmt.Errorf("未知停止方式: %s, 应为 %s 或 %s", c.Method, StopMethodKill, StopMethodCommand)
 	}
 	return nil
 }

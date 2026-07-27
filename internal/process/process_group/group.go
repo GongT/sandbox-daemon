@@ -1,4 +1,4 @@
-package instance
+package process_group
 
 import (
 	_ "embed"
@@ -6,14 +6,17 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+
+	"github.com/gongt/sandbox-daemon/internal/process/instance"
+	"github.com/gongt/sandbox-daemon/internal/process/process_list"
 )
 
 //go:embed startup_script.sh
 var startupScript string
 
 type ProcessGroup struct {
-	child_processes *ProcessList
-	leaderInstance  *ProcessInstance
+	child_processes *process_list.ProcessList
+	leaderInstance  *instance.ProcessInstance
 
 	env         []string
 	cwd         string
@@ -25,7 +28,7 @@ type ProcessGroup struct {
 
 func NewProcessGroup() *ProcessGroup {
 	return &ProcessGroup{
-		child_processes: NewProcessList(),
+		child_processes: process_list.New(),
 	}
 }
 
@@ -56,34 +59,34 @@ func (pg *ProcessGroup) _assert_not_started() {
 }
 
 // 创建一个新的进程实例，并将其注册到进程组中，但不启动它
-func (pg *ProcessGroup) CreateProcess(cmdline []string) *ProcessInstance {
+func (pg *ProcessGroup) CreateProcess(cmdline []string) *instance.ProcessInstance {
 	pg.mu.Lock()
 	defer pg.mu.Unlock()
 
 	isLeader := pg.leaderInstance == nil
 
-	var instance *ProcessInstance
+	var proc *instance.ProcessInstance
 	if isLeader {
 		// TODO: 用golang实现这个helper
-		instance = NewProcessInstance(append([]string{"bash", "-c", startupScript, "--"}, cmdline...))
-		instance.SetEnv(append(pg.env, "_CHDIR_="+pg.cwd, "OVERLAY_ROOT="+pg.overlayRoot))
-		instance.SetSysProcAttr(func(attr *syscall.SysProcAttr) {
+		proc = instance.New(append([]string{"bash", "-c", startupScript, "--"}, cmdline...))
+		proc.SetEnv(append(pg.env, "_CHDIR_="+pg.cwd, "OVERLAY_ROOT="+pg.overlayRoot))
+		proc.SetSysProcAttr(func(attr *syscall.SysProcAttr) {
 			attr.Cloneflags |= syscall.CLONE_NEWNS | syscall.CLONE_NEWPID
 		})
 
-		pg.leaderInstance = instance
+		pg.leaderInstance = proc
 	} else {
 		wrap := nsenter(pg.leaderInstance.GetPid(), pg.cwd, cmdline)
 		// log.Printf("创建子进程: %v", wrap)
-		instance = NewProcessInstance(wrap)
-		instance.SetEnv(pg.env)
+		proc = instance.New(wrap)
+		proc.SetEnv(pg.env)
 	}
-	pg.child_processes.Register(instance)
+	pg.child_processes.Register(proc)
 
-	instance.SetDir("/")
-	instance.SetBeforeStartHook(pg.beforeStart)
+	proc.SetDir("/")
+	proc.SetBeforeStartHook(pg.beforeStart)
 
-	return instance
+	return proc
 }
 
 func nsenter(leaderPid int, cwd string, cmdline []string) []string {
