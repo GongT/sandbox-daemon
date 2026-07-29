@@ -51,7 +51,7 @@ func (l *loggingContext) GetObjectKeys(tagPath ConfigPath) (keys []string, err e
 	return keys, err
 }
 
-func (l *loggingContext) GetValue(t reflect.Type, tagPath ConfigPath) (value string, err error) {
+func (l *loggingContext) GetValue(t reflect.Type, tagPath ConfigPath) (value any, err error) {
 	if true {
 		log.Printf("[getValue] %s | %s", tagPath.JoinWithDot(""), t.String())
 	}
@@ -62,18 +62,4 @@ func (l *loggingContext) GetValue(t reflect.Type, tagPath ConfigPath) (value str
 		log.Printf("           -> value: %s", value)
 	}
 	return value, err
-}
-
-func (l *loggingContext) ConvertNonScalar(get_value string, t reflect.Type) (interface{}, error) {
-	if true {
-		log.Printf("[ConvertNonScalar] %s | %s", get_value, t.String())
-	}
-	r, err := l.oCtx.ConvertNonScalar(get_value, t)
-	if err != nil {
-		log.Printf("           -> error: %.50s", err.Error())
-	} else {
-		log.Printf("           -> value: %v", r)
-	}
-
-	return r, err
 }

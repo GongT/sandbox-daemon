@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/gongt/sandbox-daemon/internal/tools"
+	"github.com/gongt/sandbox-daemon/internal/tools/interfaces"
+	"github.com/gongt/sandbox-daemon/internal/tools/reflection/deep_init"
 	"gitlab.com/tozd/go/errors"
 )
 
@@ -20,9 +22,14 @@ func LoadConfigFile(filename string, inputs ...interface{}) error {
 func LoadConfigContent(content string, inputs ...interface{}) error {
 	content = strings.TrimSpace(content)
 
-	var ctx *configYamlContext
+	var ctx ConfigFillContext
 	if strings.HasPrefix(content, "{") {
-		return errors.Errorf("配置识别为JSON, 但JSON格式暂不支持")
+		tools.DebugLog("配置识别为JSON")
+		var err error
+		ctx, err = NewJsonContext(content)
+		if err != nil {
+			return errors.WithMessage(err, "JSON解析错误")
+		}
 	} else {
 		tools.DebugLog("配置识别为YAML")
 		var err error
@@ -40,6 +47,27 @@ func LoadConfigContent(content string, inputs ...interface{}) error {
 	return nil
 }
 
-func loadConfigInto(input interface{}, ctx *configYamlContext) error {
-	return WalkStruct(input, ctx)
+func loadConfigInto(input any, ctx ConfigFillContext) error {
+	walkedValues := deep_init.DeepInitialize(input)
+	for _, ptr := range walkedValues {
+		if sub, ok := ptr.(interfaces.Initializer); ok {
+			sub.Initialize()
+		}
+	}
+
+	err := WalkStruct(input, ctx)
+
+	if err != nil {
+		return err
+	}
+
+	for _, ptr := range walkedValues {
+		if sub, ok := ptr.(interfaces.Validator); ok {
+			err := sub.Validate()
+			if err != nil {
+				return errors.WithMessagef(err, "读取后验证失败")
+			}
+		}
+	}
+	return nil
 }

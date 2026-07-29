@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/gongt/sandbox-daemon/internal/tools/i18n/type_name"
 	"github.com/tidwall/gjson"
 	"gitlab.com/tozd/go/errors"
 )
@@ -57,11 +58,25 @@ func (ctx *configJsonContext) GetObjectKeys(tagPath ConfigPath) ([]string, error
 	return keys, nil
 }
 
-func (ctx *configJsonContext) GetValue(t reflect.Type, tagPath ConfigPath) (string, error) {
+func (ctx *configJsonContext) GetValue(t reflect.Type, tagPath ConfigPath) (any, error) {
 	path := tagPath.JoinWithDot("")
 	result := ctx.json.Get(path)
 	if !result.Exists() {
 		return "", errors.Errorf("错误调用GetValue: 路径不存在")
 	}
-	return result.String(), nil
+
+	switch t.Kind() {
+	case reflect.String:
+		return result.String(), nil
+	case reflect.Bool:
+		return result.Bool(), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return result.Int(), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return result.Uint(), nil
+	case reflect.Float32, reflect.Float64:
+		return result.Float(), nil
+	default:
+		return nil, errors.Errorf("不支持将%s转换为%s", type_name.TranslateType(reflect.TypeOf(result.Value())), type_name.TranslateType(t))
+	}
 }

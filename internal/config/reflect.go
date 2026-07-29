@@ -1,23 +1,21 @@
 package config
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/gongt/sandbox-daemon/internal/tools"
+	"github.com/gongt/sandbox-daemon/internal/tools/i18n/type_name"
+	"github.com/gongt/sandbox-daemon/internal/tools/interfaces"
+	"github.com/gongt/sandbox-daemon/internal/tools/reflection"
+	"github.com/gongt/sandbox-daemon/internal/tools/reflection/deep_init"
 	"gitlab.com/tozd/go/errors"
 )
 
 type ConfigFillContext interface {
-	HasValue(tagPath ConfigPath) (bool, error)
-	GetArraySize(tagPath ConfigPath) (int, error)
-	GetObjectKeys(tagPath ConfigPath) ([]string, error)
-	GetValue(t reflect.Type, tagPath ConfigPath) (string, error)
-	ConvertNonScalar(get_value string, t reflect.Type) (interface{}, error)
-}
-
-type unmarshaler interface {
-	FromString(string) error
+	HasValue(path ConfigPath) (bool, error)
+	GetArraySize(path ConfigPath) (int, error)
+	GetObjectKeys(path ConfigPath) ([]string, error)
+	GetValue(t reflect.Type, path ConfigPath) (any, error)
 }
 
 func WalkStruct(input any, ctx ConfigFillContext) error {
@@ -35,7 +33,7 @@ func WalkStruct(input any, ctx ConfigFillContext) error {
 		ctx = &loggingContext{oCtx: ctx}
 	}
 
-	_, err := walkValue(value.Elem(), newConfigPath(), ctx)
+	_, err := walkValue(value, newTwoPath(), ctx)
 
 	if err != nil {
 		if wp, ok := err.(*errorWithPath); ok {
@@ -50,178 +48,194 @@ func WalkStruct(input any, ctx ConfigFillContext) error {
 	return err
 }
 
-func shouldBePointer(v interface{}) error {
+func shouldBePointer(v any) error {
 	if v == nil {
-		return errors.Errorf("参数必须是指针类型, 但实际是: <nil>")
+		return errors.Errorf("参数必须是指针, 但实际是 <nil>")
 	}
-	if reflect.TypeOf(v).Kind() != reflect.Ptr {
-		return errors.Errorf("参数必须是指针类型, 但实际是: %v", reflect.TypeOf(v).Kind())
+
+	t := reflect.TypeOf(v)
+	if t.Kind() != reflect.Pointer {
+		return errors.Errorf("参数必须是指针类型, 但得到%s", type_name.TranslateType(t))
+	}
+	if t.Elem().Kind() == reflect.Pointer {
+		return errors.Errorf("不允许多层指针参数“%v”", t.Kind())
 	}
 	return nil
 }
 
-func walkValue(v reflect.Value, tagPath ConfigPath, ctx ConfigFillContext) (bool, error) {
-	if !v.IsValid() {
-		return false, errPathF(tagPath, "值无效")
-	}
-
-	if v.Kind() == reflect.Ptr {
-		if v.IsNil() {
-			if !v.CanSet() {
-				return false, errPathF(tagPath, "反射地址不可写")
-			}
-			v.Set(reflect.New(v.Type().Elem()))
-		}
-		return walkValue(v.Elem(), tagPath, ctx)
-	}
-
-	if v.Kind() == reflect.Interface && !v.IsNil() {
-		return walkValue(v.Elem(), tagPath, ctx)
-	}
-
-	if tagPath.Size > 0 {
-		// 非root节点，检查是否有值，没有则直接离开
-		has, err := ctx.HasValue(tagPath)
-		if err != nil {
-			return false, errPath(tagPath, err)
-		}
-		if !has {
-			return false, nil
-		}
-	}
-
-	// 此后第一个返回值都是true
-
-	if !v.CanSet() {
-		return true, errPath(tagPath, fmt.Errorf("反射地址不可写"))
-	}
-
+func walkValue(vPtr reflect.Value, path twoPath, ctx ConfigFillContext) (bool, error) {
 	var err error
+	vPtr, err = reflection.InstantiatePointers(vPtr) // 已确认vPtr绝对是指针
+	if err != nil {
+		return false, errPath(path, err)
+	} else if vPtr.IsNil() { // 指针本身是nil
+		panic("使用DeepInitialize后，walkValue收到的vPtr出现nil值: " + path.String())
+	} else if !vPtr.Elem().CanSet() { // 指向只读内存
+		panic("使用DeepInitialize后，walkValue收到的vPtr地址不可写: " + path.String())
+	}
 
+	hasValue, err := ctx.HasValue(path.tags)
+	ret := func(err error) (bool, error) {
+		if err != nil {
+			return hasValue, errPath(path, err)
+		}
+		return hasValue, nil
+	}
+
+	if err != nil {
+		return ret(err)
+	}
 	// 检查v的类型是否具有自定义的转换器 (FromString) 方法
-	var converter string_parser
-	if v.CanAddr() {
-		vPtr := v.Addr().Interface()
-		if unmarshaler, ok := vPtr.(unmarshaler); ok {
-			tools.DebugLog("[walk] 自带FromString的类型: %s", s(tagPath))
-			converter = func(get_value string, t reflect.Type) (any, error) {
-				err := unmarshaler.FromString(get_value)
-				return nil, err
+	string_parser := interfaces.GetStringParser(vPtr.Interface())
+	if string_parser != nil {
+		// 调用自定义转换器
+		if path.IsRoot() {
+			return ret(errPathF(path, "根对象无法调用自定义转换器"))
+		} else if hasValue {
+			stringVal, err := ctx.GetValue(reflect.TypeFor[string](), path.tags)
+			if err != nil {
+				return ret(err)
 			}
-			err = applyPrimitive(v, tagPath, ctx, converter)
-			return true, errPath(tagPath, err)
+			return ret(string_parser(stringVal.(string)))
 		}
 	}
 
-	switch v.Kind() {
+	// 通用类型处理
+	subHas := false
+	switch vPtr.Elem().Kind() {
 	case reflect.Bool, reflect.String, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
 		reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128:
-		tools.DebugLog("[walk] 标量: %s", s(tagPath))
-		err = applyPrimitive(v, tagPath, ctx, nil)
+		tools.DebugLog("[walk] 标量: %s | %s", path.String(), vPtr.Elem().Type().String())
+		err = applyPrimitive(vPtr, path, ctx)
 	case reflect.Struct:
-		tools.DebugLog("[walk] 结构体: %s", s(tagPath))
-		err = walkStruct(v, tagPath, ctx)
+		tools.DebugLog("[walk] 结构体: %s | %s", path.String(), vPtr.Elem().Type().String())
+		subHas, err = walkStruct(vPtr, path, ctx)
 	case reflect.Slice, reflect.Array:
-		tools.DebugLog("[walk] 数组/切片: %s", s(tagPath))
-		err = walkSlice(v, tagPath, ctx)
+		tools.DebugLog("[walk] 数组/切片: %s | %s", path.String(), vPtr.Elem().Type().String())
+		subHas, err = walkSlice(vPtr, path, ctx)
 	case reflect.Map:
-		tools.DebugLog("[walk] Map: %s", s(tagPath))
-		err = walkMap(v, tagPath, ctx)
+		tools.DebugLog("[walk] Map: %s | %s", path.String(), vPtr.Elem().Type().String())
+		subHas, err = walkMap(vPtr, path, ctx)
 	case reflect.Invalid, reflect.Chan, reflect.Func, reflect.Interface, reflect.Pointer, reflect.UnsafePointer:
-		return true, errPath(tagPath, fmt.Errorf("无法处理%s类型", tools.TranslateType(v.Type())))
+		err = errors.Errorf("无法处理%s类型", type_name.TranslateType(vPtr.Type()))
 	default:
-		tools.DebugLog("[walk] 其他类型: %s", s(tagPath))
-		err = applyPrimitive(v, tagPath, ctx, ctx.ConvertNonScalar)
+		// tools.DebugLog("[walk] 其他类型: %s", s(path.tags))
+		// err = applyPrimitive(vPtr, path, ctx)
+		err = errors.Errorf("无法处理%s类型", type_name.TranslateType(vPtr.Type()))
 	}
 
-	return true, errPath(tagPath, err)
+	hasValue = hasValue || subHas
+	return ret(err)
 }
 
-func walkMap(v reflect.Value, tagPath ConfigPath, ctx ConfigFillContext) error {
-	tMap := v.Type()
+func walkMap(mapPtr reflect.Value, path twoPath, ctx ConfigFillContext) (hasValue bool, err error) {
+	tMap := mapPtr.Elem().Type()
 	if tMap.Key().Kind() != reflect.String {
-		return errPathF(tagPath, "不支持map[%s]类型", tools.TranslateType(tMap.Key()))
+		return false, errPathF(path, "不支持map[%s]类型", type_name.TranslateType(tMap.Key()))
 	}
 
-	keys, err := ctx.GetObjectKeys(tagPath)
+	keys, err := ctx.GetObjectKeys(path.tags)
 	if err != nil {
-		return errPathW(tagPath, err, "获取对象键失败")
-	}
-
-	if v.IsNil() {
-		if !v.CanSet() {
-			return errPathF(tagPath, "反射地址不可写")
-		}
-		v.Set(reflect.MakeMap(tMap))
+		return false, errPathW(path, err, "获取对象键失败")
 	}
 
 	for _, key := range keys {
 		tools.DebugLog("[walk]     + %s", key)
-		keyValue := reflect.ValueOf(key)
-		elemPath := tagPath.WithChild(createSegmentString(key))
 
-		newValue := reflect.New(tMap.Elem()).Elem()
+		vKey := reflect.ValueOf(key)
+		elemPath := path.WithField(key, key)
 
-		var hasValue bool
-		if hasValue, err = walkValue(newValue, elemPath, ctx); err != nil {
-			return err
+		newValuePtr := reflect.New(tMap.Elem())
+		deep_init.DeepInitialize(newValuePtr.Interface())
+
+		if hasValue, err = walkValue(newValuePtr, elemPath, ctx); err != nil {
+			return
 		}
 
 		if hasValue {
-			v.SetMapIndex(keyValue, newValue)
+			mapPtr.Elem().SetMapIndex(vKey, newValuePtr.Elem())
+		} else if !mapPtr.MapIndex(vKey).IsValid() {
+			mapPtr.Elem().SetMapIndex(vKey, newValuePtr.Elem())
 		}
 	}
 
-	return nil
+	return
 }
 
-func walkStruct(v reflect.Value, tagPath ConfigPath, ctx ConfigFillContext) error {
+func shouldGoDeeper(vType reflect.Type) bool {
+	vType = reflection.IndirectType(vType)
+	switch vType.Kind() {
+	case reflect.Struct:
+		return true
+	case reflect.Map, reflect.Slice, reflect.Array:
+		return shouldGoDeeper(vType.Elem())
+	default:
+		return false
+	}
+}
+
+func walkStruct(vPtr reflect.Value, path twoPath, ctx ConfigFillContext) (hasValue bool, err error) {
+	v := vPtr.Elem()
 	vType := v.Type()
 	for i := 0; i < vType.NumField(); i++ {
 		field := vType.Field(i)
-		valueField := v.Field(i)
+		valuePtr := v.Field(i).Addr()
+
+		tools.DebugLog("[walk]     + %s", field.Name)
 
 		tag, has := field.Tag.Lookup("config")
 
-		var childPath ConfigPath
+		var childPath twoPath
+		var noTag bool
 		if tag == "" {
-			childPath = tagPath
-			// 没有tag时，只有当字段是结构体时才会继续递归
-			// TODO:custom class
-			if valueField.Kind() != reflect.Struct {
-				continue
-			}
+			childPath = path.WithField(field.Name, tag)
+			noTag = true
 		} else {
-			childPath = tagPath.WithChild(createSegmentString(tag))
+			childPath = path.WithField(field.Name, tag)
 		}
 
 		if field.IsExported() == false {
 			if has {
-				return errPathF(childPath, "字段%s是未导出的，但有config标签", field.Name)
+				err = errPathF(childPath, "字段%s是未导出的，但有config标签", field.Name)
+				break
 			}
 			continue // 跳过未导出的字段
 		}
 
-		if _, err := walkValue(valueField, childPath, ctx); err != nil {
-			return err
+		if noTag && shouldGoDeeper(field.Type) == false {
+			// 没有tag时，只有当字段是结构体时才会继续递归
+			tools.DebugLog("[walk]     - 没有tag且非递归字段")
+			continue
+		} else {
+			tools.DebugLog("[walk]     - 递归字段")
+		}
+
+		var subHas bool
+		subHas, err = walkValue(valuePtr, childPath, ctx)
+		hasValue = hasValue || subHas
+
+		if err != nil {
+			break
 		}
 	}
-	return nil
+	return
 }
 
 // 接收数组、切片，将配置文件中的每个元素添加到已有的数组或切片后
-func walkSlice(v reflect.Value, tagPath ConfigPath, ctx ConfigFillContext) error {
-	cSize, err := ctx.GetArraySize(tagPath)
+func walkSlice(vPtr reflect.Value, path twoPath, ctx ConfigFillContext) (hasValue bool, err error) {
+	v := vPtr.Elem()
+
+	cSize, err := ctx.GetArraySize(path.tags)
 	if err != nil {
-		return errPathW(tagPath, err, "获取数组大小失败")
+		return false, errPathW(path, err, "获取数组大小失败")
 	}
 	if cSize == 0 {
-		return nil
+		return false, nil
 	}
 
 	if cSize < 0 {
-		return errPathF(tagPath, "数组大小不能为负数: %d", cSize)
+		return false, errPathF(path, "数组大小不能为负数: %d", cSize)
 	}
 
 	// 如果配置文件有此项，则需要扩展切片或数组长度
@@ -235,54 +249,24 @@ func walkSlice(v reflect.Value, tagPath ConfigPath, ctx ConfigFillContext) error
 
 	for i := range cSize {
 		tools.DebugLog("  - 元素 %d", i)
-		elemPath := tagPath.WithChild(createSegmentNumber(i))
-		if _, err := walkValue(v.Index(i+existsSize), elemPath, ctx); err != nil {
-			return err
+		elemPath := path.WithArrayElement(i+existsSize, i)
+		if _, err := walkValue(v.Index(i+existsSize).Addr(), elemPath, ctx); err != nil {
+			return true, err
 		}
 	}
-	return nil
+	return true, nil
 }
 
-type string_parser func(string, reflect.Type) (interface{}, error)
-
-func applyPrimitive(v reflect.Value, tagPath ConfigPath, ctx ConfigFillContext, parser string_parser) error {
-	stringRepr, err := ctx.GetValue(v.Type(), tagPath)
+func applyPrimitive(vPtr reflect.Value, path twoPath, ctx ConfigFillContext) error {
+	newVal, err := ctx.GetValue(vPtr.Elem().Type(), path.tags)
 	if err != nil {
-		return err
+		return errPath(path, err)
 	}
 
-	vType := v.Type()
-
-	var convertedValue interface{}
-	if parser == nil {
-		convertedValue, err = tools.ConvertStringToType(stringRepr, vType)
-		if err != nil {
-			return errPathW(tagPath, err, "默认转换器转换失败")
-		}
-	} else {
-		convertedValue, err = parser(stringRepr, vType)
-		if err != nil {
-			return errPathW(tagPath, err, "自定义转换器转换失败")
-		}
-		if convertedValue == nil {
-			// 实现Unmarshaler接口的类型可能会返回nil值，表示它已经在FromString方法中设置了自己的值
-			return nil
-		}
-	}
-
-	cType := reflect.TypeOf(convertedValue)
-	if !cType.AssignableTo(vType) {
-		if cType.ConvertibleTo(vType) {
-			convertedValue = reflect.ValueOf(convertedValue).Convert(vType).Interface()
-		} else {
-			return errPathF(tagPath, "数据类型不符: 预期%s, 实际%s", tools.TranslateType(vType), tools.TranslateType(cType))
-		}
-	}
-
+	err = reflection.AssignValueReflect(vPtr.Elem(), reflect.ValueOf(newVal))
 	if err != nil {
-		return err
+		return errPath(path, err)
 	}
-
-	v.Set(reflect.ValueOf(convertedValue))
+	// err = convert.ConvertStringToType(newVal, vPtr)
 	return nil
 }

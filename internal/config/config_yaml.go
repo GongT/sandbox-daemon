@@ -7,6 +7,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
+	"github.com/gongt/sandbox-daemon/internal/tools/i18n/type_name"
 	"gitlab.com/tozd/go/errors"
 )
 
@@ -99,7 +100,7 @@ func (ctx *configYamlContext) GetObjectKeys(tagPath ConfigPath) ([]string, error
 	}
 }
 
-func (ctx *configYamlContext) GetValue(t reflect.Type, tagPath ConfigPath) (string, error) {
+func (ctx *configYamlContext) GetValue(t reflect.Type, tagPath ConfigPath) (any, error) {
 	key := tagPath.JoinWithAccessor("$")
 
 	node, exists := ctx.nCache[key]
@@ -110,7 +111,13 @@ func (ctx *configYamlContext) GetValue(t reflect.Type, tagPath ConfigPath) (stri
 	switch node := node.(type) {
 	case *ast.StringNode:
 		return node.Value, nil
+	case *ast.BoolNode:
+		return node.Value, nil
+	case *ast.IntegerNode:
+		return node.Value, nil
+	case *ast.FloatNode:
+		return node.Value, nil
 	default:
-		return node.String(), nil
+		return nil, errors.Errorf("不支持将%s转换为%s", node.Type().String(), type_name.TranslateType(t))
 	}
 }

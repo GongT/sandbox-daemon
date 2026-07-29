@@ -63,29 +63,31 @@ not:
 `
 
 const testConfigContentJson = `
-name: "value-of-name"
-enabled: true
-commandline:
-  - "arg1"
-  - "arg2"
-environment:
-  Key1: "value1"
-  key2: "value2"
-timeoutMs: 1000
-urls: "https://example.com/path?query=1"
-hidden_field: "should not be loaded"
-objects:
-  - id: 1
-    name: "object1"
-  - id: 2
-    name: "object2"
-map_field:
-  keyA: "valueA"
-  keyB: "valueB"
-
-not:
-  really:
-    deep: "load-to-deep"
+{
+  "name": "value-of-name",
+  "enabled": true,
+  "commandline": ["arg1","arg2"],
+  "environment": {
+    "Key1": "value1",
+    "key2": "value2"
+  },
+  "timeoutMs": 1000,
+  "urls": "https://example.com/path?query=1",
+  "hidden_field": "should not be loaded",
+  "objects": [
+    {"id": 1,"name": "object1"},
+    {"id": 2,"name": "object2"}
+  ],
+  "map_field": {
+    "keyA": "valueA",
+    "keyB": "valueB"
+  },
+  "not": {
+    "really": {
+      "deep": "load-to-deep"
+    }
+  }
+}
 `
 
 func TestLoadYaml(t *testing.T) {
@@ -101,8 +103,8 @@ func TestLoadJson(t *testing.T) {
 }
 
 func testData(t *testing.T, content string) {
-	var part2 testConfigPart2
-	var part1 testConfigPart1
+	part2 := testConfigPart2{}
+	part1 := testConfigPart1{}
 
 	part1 = testConfigPart1{
 		Environment: map[string]string{

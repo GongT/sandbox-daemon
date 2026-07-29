@@ -1,13 +1,15 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 	"strconv"
 	"testing"
 
+	"github.com/gongt/sandbox-daemon/internal/tools/i18n/type_name"
+	"github.com/gongt/sandbox-daemon/internal/tools/reflection/deep_init"
 	"github.com/stretchr/testify/require"
+	"gitlab.com/tozd/go/errors"
 )
 
 type reflectTestConfig struct {
@@ -55,7 +57,7 @@ func (ctx *testCtx) GetObjectKeys(tagPath ConfigPath) ([]string, error) {
 	return []string{"keyA", "keyB"}, nil
 }
 
-func (ctx *testCtx) GetValue(typ reflect.Type, tagPath ConfigPath) (string, error) {
+func (ctx *testCtx) GetValue(typ reflect.Type, tagPath ConfigPath) (any, error) {
 	require.NotEmpty(ctx.t, tagPath)
 	last := tagPath.StringAt(-1)
 	switch last {
@@ -68,22 +70,20 @@ func (ctx *testCtx) GetValue(typ reflect.Type, tagPath ConfigPath) (string, erro
 	case reflect.String:
 		return "value:" + last, nil
 	case reflect.Bool:
-		return "true", nil
+		return true, nil
 	case reflect.Int:
-		return "42", nil
+		return 42, nil
 	default:
-		return "", nil
+		return nil, errors.Errorf("不支持的类型: %s", type_name.TranslateType(typ))
 	}
-}
-
-func (ctx *testCtx) ConvertNonScalar(get_value string, t reflect.Type) (interface{}, error) {
-	return nil, fmt.Errorf("没有此路径")
 }
 
 func TestWalkStruct(t *testing.T) {
 	log.SetOutput(t.Output())
 
 	input := &reflectTestConfig{}
+	deep_init.DeepInitialize(&input)
+
 	ctx := &testCtx{t: t}
 
 	err := WalkStruct(input, ctx)

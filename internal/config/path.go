@@ -104,3 +104,43 @@ func (p ConfigPath) StringAt(index int) string {
 	}
 	return p.segments[index].String()
 }
+
+type twoPath struct {
+	golang ConfigPath
+	tags   ConfigPath
+}
+
+func newTwoPath() twoPath {
+	return twoPath{
+		golang: newConfigPath(),
+		tags:   newConfigPath(),
+	}
+}
+
+func (p twoPath) WithArrayElement(goArr int, confArr int) twoPath {
+	return twoPath{
+		golang: p.golang.WithChild(createSegmentNumber(goArr)),
+		tags:   p.tags.WithChild(createSegmentNumber(confArr)),
+	}
+}
+
+func (p twoPath) WithField(goChild string, confChild string) twoPath {
+	tags := p.tags
+
+	if confChild != "" {
+		tags = tags.WithChild(createSegmentString(confChild))
+	}
+
+	return twoPath{
+		golang: p.golang.WithChild(createSegmentString(goChild)),
+		tags:   tags,
+	}
+}
+
+func (p twoPath) IsRoot() bool {
+	return p.tags.Size == 0
+}
+
+func (p twoPath) String() string {
+	return "(golang: " + p.golang.JoinWithDot("") + ", tags: " + p.tags.JoinWithDot("") + ")"
+}

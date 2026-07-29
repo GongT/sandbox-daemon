@@ -34,16 +34,8 @@ func TestProcessGroup(t *testing.T) {
 	init := g.CreateProcess([]string{"sleep", "infinity"})
 	init_buff := test_output(init)
 
-	init.Start()
-	defer init.Join()
-	defer init.Kill(os.Kill)
-
-	go func() {
-		stat, err := init.Join()
-		t.Logf("init输出 %s", init_buff.String())
-		require.Error(t, err, "asdasd")
-		require.Equal(t, -1, stat.ExitCode())
-	}()
+	err = init.Start()
+	require.NoError(t, err, "启动init进程失败")
 
 	time.Sleep(1 * time.Second) // 等待init启动完成
 
@@ -64,6 +56,13 @@ func TestProcessGroup(t *testing.T) {
 	require.Equal(t, 1, g.child_processes.Size())
 
 	os.RemoveAll(tmpDir)
+
+	init.Kill(os.Kill)
+
+	stat, err := init.Join()
+	t.Logf("init输出 %s", init_buff.String())
+	require.Error(t, err, "asdasd")
+	require.Equal(t, -1, stat.ExitCode())
 }
 
 func test_output(instance *instance.ProcessInstance) *bytes.Buffer {

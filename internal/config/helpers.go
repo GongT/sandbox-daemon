@@ -11,27 +11,39 @@ func s(paths ConfigPath) string {
 type errorWithPath struct {
 	Err     error
 	CfgPath ConfigPath
+	GoPath  ConfigPath
 }
 
-func errPathF(path ConfigPath, msg string, args ...any) error {
+func errPathF(path twoPath, msg string, args ...any) error {
 	err := errors.Errorf(msg, args...)
 
 	return &errorWithPath{
 		Err:     errors.WithStack(err),
-		CfgPath: path,
+		CfgPath: path.tags,
+		GoPath:  path.golang,
 	}
 }
 
-func errPathW(path ConfigPath, err error, msg string, args ...any) error {
+func errPathW(path twoPath, err error, msg string, args ...any) error {
+	if msg == "" && len(args) == 0 {
+		return errPath(path, err)
+	}
+
+	if e, dup := err.(*errorWithPath); dup {
+		e.Err = errors.WithMessagef(e.Err, msg, args...)
+		return e
+	}
+
 	err = errors.WithMessagef(err, msg, args...)
 
 	return &errorWithPath{
 		Err:     errors.WithStack(err),
-		CfgPath: path,
+		CfgPath: path.tags,
+		GoPath:  path.golang,
 	}
 }
 
-func errPath(path ConfigPath, err error) error {
+func errPath(path twoPath, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -41,7 +53,8 @@ func errPath(path ConfigPath, err error) error {
 
 	return &errorWithPath{
 		Err:     errors.WithStack(err),
-		CfgPath: path,
+		CfgPath: path.tags,
+		GoPath:  path.golang,
 	}
 }
 
@@ -50,5 +63,5 @@ func (e *errorWithPath) Error() string {
 }
 
 func (e *errorWithPath) Unwrap() error {
-	return errors.WithMessagef(e.Err, "配置路径\"%v\"", s(e.CfgPath))
+	return errors.WithMessagef(e.Err, "配置路径\"%v\"映射为\"%v\"", s(e.CfgPath), s(e.GoPath))
 }

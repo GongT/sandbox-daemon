@@ -1,5 +1,7 @@
 package config
 
+import "github.com/gongt/sandbox-daemon/internal/process/environ"
+
 type HookConfig struct {
 	// 命令行
 	Cmdline []string `config:"cmdline"`
@@ -26,7 +28,7 @@ type hooksConfig struct {
 type LifecycleConfig struct {
 	exec         ExecConfig
 	stop         StopConfig
-	environments EnvironmentsConfig
+	environments environ.ManagerConfig
 	hooks        hooksConfig
 }
 

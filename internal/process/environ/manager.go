@@ -2,36 +2,29 @@ package environ
 
 import (
 	"os"
-
-	"github.com/gongt/sandbox-daemon/internal/process/config"
-	"github.com/gongt/sandbox-daemon/internal/tools"
 )
 
 type EnvironmentManager struct {
-	config *config.EnvironmentsConfig
+	config *ManagerConfig
 
 	initial map[string]string
 }
 
-var initialEnviron map[string]string
-
-func New(config *config.EnvironmentsConfig) *EnvironmentManager {
-	clone := make(map[string]string)
-	for k, v := range initialEnviron {
-		clone[k] = v
-	}
+func NewManager(config *ManagerConfig) *EnvironmentManager {
+	snapshot := Map{}
+	snapshot.ExtendLines(os.Environ(), true)
 
 	return &EnvironmentManager{
 		config:  config,
-		initial: clone,
+		initial: snapshot,
 	}
 }
 
-func (m *EnvironmentManager) Snapshot() tools.EnvironmentMap {
-	snapshot := tools.EnvironmentMap{}
-	snapshot.ExtendLines(os.Environ(), true)
+func (m *EnvironmentManager) Snapshot() (Map, error) {
+	snapshot := Map{}
+	snapshot.Extend(m.initial, true)
 
-	m.config.ApplyMap(snapshot)
+	err := m.config.ApplyMap(snapshot)
 
-	return snapshot
+	return snapshot, err
 }
