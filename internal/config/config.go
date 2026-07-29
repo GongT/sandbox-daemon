@@ -65,7 +65,7 @@ func loadConfigInto(input any, ctx ConfigFillContext) error {
 		if sub, ok := ptr.(interfaces.Validator); ok {
 			err := sub.Validate()
 			if err != nil {
-				return errors.WithMessagef(err, "读取后验证失败")
+				return errors.WithMessagef(err, "读取配置文件后验证失败")
 			}
 		}
 	}

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/goccy/go-yaml"
@@ -69,13 +68,13 @@ func (ctx *configYamlContext) GetArraySize(tagPath ConfigPath) (int, error) {
 	key := tagPath.JoinWithAccessor("$")
 
 	if node, exists := ctx.nCache[key]; !exists {
-		return 0, errors.WithStack(fmt.Errorf("错误调用GetArraySize: 路径不存在"))
+		return 0, errors.Errorf("错误调用GetArraySize: 路径不存在")
 	} else {
 		switch node := node.(type) {
 		case *ast.SequenceNode:
 			return len(node.Values), nil
 		default:
-			return 0, errors.WithStack(fmt.Errorf("错误调用GetArraySize: 路径不是数组"))
+			return 0, errors.Errorf("错误调用GetArraySize: 路径不是数组")
 		}
 	}
 }
@@ -84,7 +83,7 @@ func (ctx *configYamlContext) GetObjectKeys(tagPath ConfigPath) ([]string, error
 	key := tagPath.JoinWithAccessor("$")
 
 	if node, exists := ctx.nCache[key]; !exists {
-		return nil, errors.WithStack(fmt.Errorf("错误调用GetObjectKeys: 路径不存在"))
+		return nil, errors.Errorf("错误调用GetObjectKeys: 路径不存在")
 	} else {
 		switch node := node.(type) {
 		case *ast.MappingNode:
@@ -95,7 +94,7 @@ func (ctx *configYamlContext) GetObjectKeys(tagPath ConfigPath) ([]string, error
 			}
 			return keys, nil
 		default:
-			return nil, errors.WithStack(fmt.Errorf("错误调用GetObjectKeys: 路径不是对象"))
+			return nil, errors.Errorf("错误调用GetObjectKeys: 路径不是对象")
 		}
 	}
 }
@@ -105,7 +104,7 @@ func (ctx *configYamlContext) GetValue(t reflect.Type, tagPath ConfigPath) (any,
 
 	node, exists := ctx.nCache[key]
 	if !exists {
-		return "", errors.WithStack(fmt.Errorf("错误调用GetValue: 路径不存在"))
+		return "", errors.Errorf("错误调用GetValue: 路径不存在")
 	}
 
 	switch node := node.(type) {

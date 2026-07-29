@@ -1,10 +1,11 @@
 package instance
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/pkg/errors"
 )
 
 type ReusableProcessInstance struct {
@@ -90,7 +91,7 @@ func (rpi *ReusableProcessInstance) IsExited() bool {
 
 func (rpi *ReusableProcessInstance) Join() (*os.ProcessState, error) {
 	if rpi.instance == nil {
-		return nil, fmt.Errorf("reusableProcessInstance: 试图Join一个还没有启动的实例")
+		return nil, errors.Errorf("reusableProcessInstance: 试图Join一个还没有启动的实例")
 	}
 
 	return rpi.instance.Join()

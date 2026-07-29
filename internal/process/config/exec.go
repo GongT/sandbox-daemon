@@ -1,8 +1,6 @@
 package config
 
-import (
-	"fmt"
-)
+import "github.com/pkg/errors"
 
 type StopMethod string
 
@@ -18,7 +16,7 @@ type ExecConfig struct {
 
 func (cfg ExecConfig) Validate() error {
 	if len(cfg.Cmdline) == 0 {
-		return fmt.Errorf("执行命令不能为空")
+		return errors.Errorf("执行命令不能为空")
 	}
 
 	return nil

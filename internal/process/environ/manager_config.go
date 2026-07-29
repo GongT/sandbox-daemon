@@ -3,15 +3,15 @@ package environ
 import (
 	"maps"
 
-	"github.com/gongt/sandbox-daemon/internal/tools"
+	"github.com/gongt/sandbox-daemon/internal/tools/types"
 	"github.com/pkg/errors"
 )
 
 type ManagerConfig struct {
 	Add       Map               `config:"environments.add"`
-	Blacklist tools.Set[string] `config:"environments.blacklist"`
-	Whitelist tools.Set[string] `config:"environments.whitelist"`
-	Requires  tools.Set[string] `config:"environments.requires"`
+	Blacklist types.Set[string] `config:"environments.blacklist"`
+	Whitelist types.Set[string] `config:"environments.whitelist"`
+	Requires  types.Set[string] `config:"environments.requires"`
 }
 
 func (m *ManagerConfig) Set(name, value string) {
@@ -31,7 +31,7 @@ func (m *ManagerConfig) DeleteBlacklist(name string) {
 }
 
 func (m *ManagerConfig) ClearBlacklist() {
-	m.Blacklist = tools.Set[string]{}
+	m.Blacklist = types.Set[string]{}
 }
 
 func (m *ManagerConfig) AddWhitelist(name string) {
@@ -43,7 +43,7 @@ func (m *ManagerConfig) DeleteWhitelist(name string) {
 }
 
 func (m *ManagerConfig) ClearWhitelist() {
-	m.Whitelist = tools.Set[string]{}
+	m.Whitelist = types.Set[string]{}
 }
 
 func (m *ManagerConfig) ApplyMap(snapshot map[string]string) error {

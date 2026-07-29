@@ -25,7 +25,7 @@ func (v *configLoadingContext) HasValue(tagPath []string) (bool, error) {
 
 	for _, tag := range tagPath {
 		if containsUppercase(tag) {
-			return false, errors.WithStack(fmt.Errorf("配置tag不能包含大写字母: %q", tag))
+			return false, errors.Errorf("配置tag不能包含大写字母: %q", tag)
 		}
 	}
 
@@ -44,7 +44,7 @@ func containsUppercase(s string) bool {
 func (v *configLoadingContext) GetArraySize(tagPath []string) (int, error) {
 	key := strings.Join(tagPath, ".")
 	if !v.rv.IsSet(key) {
-		return 0, errors.WithStack(fmt.Errorf("错误调用GetArraySize: 路径不存在"))
+		return 0, errors.Errorf("错误调用GetArraySize: 路径不存在")
 	}
 	data := v.rv.Get(key)
 	typ := reflect.TypeOf(data)
@@ -57,14 +57,14 @@ func (v *configLoadingContext) GetArraySize(tagPath []string) (int, error) {
 func (v *configLoadingContext) GetObjectKeys(tagPath []string) ([]string, error) {
 	key := strings.Join(tagPath, ".")
 	if !v.rv.IsSet(key) {
-		return nil, errors.WithStack(fmt.Errorf("错误调用GetObjectKeys: 路径不存在"))
+		return nil, errors.Errorf("错误调用GetObjectKeys: 路径不存在")
 	}
 	data := v.rv.GetStringMapString(key)
 	list := slices.Collect(maps.Keys(data))
 
 	if len(list) == 0 {
 		if v.rv.GetString(key) != "" {
-			return nil, errors.WithStack(fmt.Errorf("错误调用GetObjectKeys: 路径不是对象"))
+			return nil, errors.Errorf("错误调用GetObjectKeys: 路径不是对象")
 		}
 	}
 
@@ -74,7 +74,7 @@ func (v *configLoadingContext) GetObjectKeys(tagPath []string) ([]string, error)
 func (v *configLoadingContext) GetValue(t reflect.Type, tagPath []string) (string, error) {
 	key := strings.Join(tagPath, ".")
 	if !v.rv.IsSet(key) {
-		return "", errors.WithStack(fmt.Errorf("错误调用GetValue: 路径不存在"))
+		return "", errors.Errorf("错误调用GetValue: 路径不存在")
 	}
 	return v.rv.GetString(key), nil
 }

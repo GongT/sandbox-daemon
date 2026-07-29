@@ -35,7 +35,7 @@ func ConvertToString[T any](value T) (string, error) {
 		case interfaces.StringerE:
 			return v.String()
 		}
-		return "", errors.WithStack(fmt.Errorf("%q数据无对应字符串表示", type_name.TranslateType(reflect.TypeFor[T]())))
+		return "", errors.Errorf("%q数据无对应字符串表示", type_name.TranslateType(reflect.TypeFor[T]()))
 	}
 }
 
@@ -95,7 +95,7 @@ func ConvertStringToType(value string, targetPtr reflect.Value) error {
 		return v.FromString(value)
 	}
 
-	return errors.WithStack(fmt.Errorf("不能将字符串转换为%q", type_name.TranslateType(targetType)))
+	return errors.Errorf("不能将字符串转换为%q", type_name.TranslateType(targetType))
 }
 
 func ConvertStringTo[T any](value string, target *T) error {

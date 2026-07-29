@@ -19,7 +19,7 @@ func TestProcessConfigLoad(t *testing.T) {
 
 	cfg := LifecycleConfig{}
 	err := internalconfig.LoadConfigContent(assets.ExampleConfigYAML, &cfg.exec, &cfg.stop, &cfg.environments, &cfg.hooks)
-	require.NoError(t, err)
+	require.Error(t, err, "不支持指定")
 
 	godump.Fdump(t.Output(), cfg)
 
