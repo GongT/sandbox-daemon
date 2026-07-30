@@ -1,7 +1,6 @@
 package instance
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -46,5 +45,25 @@ func TestInstanceStop(t *testing.T) {
 
 	require.Error(t, proc.Kill(os.Kill))
 
-	fmt.Printf("退出状态: %+v\n", stat.String())
+	log.Printf("退出状态: %+v", stat.String())
+}
+
+func (mc *ProcessInstance) waitForTest(t *testing.T) {
+	select {
+	case <-mc.done:
+	case <-time.After(time.Second * 2):
+		t.Fatal("等待进程退出超时")
+	}
+}
+
+func TestErrorInstance(t *testing.T) {
+	log.SetOutput(t.Output())
+
+	proc := New([]string{"nonexistent_command"})
+	require.Error(t, proc.Start())
+
+	proc.waitForTest(t)
+	stat, err := proc.Join()
+	require.Error(t, err)
+	require.Equal(t, -1, stat.ExitCode())
 }

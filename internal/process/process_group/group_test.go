@@ -16,7 +16,7 @@ import (
 func TestProcessGroup(t *testing.T) {
 	log.SetOutput(t.Output())
 
-	g := NewProcessGroup()
+	g := New()
 
 	tmpDir := filepath.Join(os.TempDir(), "test")
 	t.Logf("创建临时目录: %s", tmpDir)
@@ -31,7 +31,8 @@ func TestProcessGroup(t *testing.T) {
 		panic(err)
 	}
 
-	init := g.CreateProcess([]string{"sleep", "infinity"})
+	init, err := g.CreateProcess([]string{"sleep", "infinity"})
+	require.NoError(t, err, "创建init进程失败")
 	init_buff := test_output(init)
 
 	err = init.Start()
@@ -45,7 +46,8 @@ func TestProcessGroup(t *testing.T) {
 	test_fast_execute(t, g, "bash", "-c", "echo wow > /xxx.txt")
 
 	// test
-	test := g.CreateProcess([]string{"cat", "/hello.txt"})
+	test, err := g.CreateProcess([]string{"cat", "/hello.txt"})
+	require.NoError(t, err, "创建test进程失败")
 	buff := test_output(test)
 
 	test.Start()
@@ -77,7 +79,8 @@ func test_output(instance *instance.ProcessInstance) *bytes.Buffer {
 
 func test_fast_execute(t *testing.T, g *ProcessGroup, cmdline ...string) {
 	// test
-	test := g.CreateProcess(cmdline)
+	test, err := g.CreateProcess(cmdline)
+	require.NoError(t, err, "创建test进程失败")
 	buff := test_output(test)
 
 	test.Start()

@@ -44,8 +44,8 @@ func TestReadOutput(t *testing.T) {
 	}
 
 	stdin := AttachInputSender(cmd)
-	stdout := AttachOutputReader(cmd)
-	stderr := AttachErrorReader(cmd)
+	stdout := AttachOutputHandler(cmd)
+	stderr := AttachErrorHandler(cmd)
 	defer stdin.Destroy()
 	defer stdout.Destroy()
 	defer stderr.Destroy()

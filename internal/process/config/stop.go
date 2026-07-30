@@ -7,6 +7,13 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+type StopMethod string
+
+const (
+	StopMethodKill    StopMethod = "kill"
+	StopMethodCommand StopMethod = "command"
+)
+
 type StopConfig struct {
 	Method  StopMethod     `config:"stop.method"`
 	Command []string       `config:"stop.command"`

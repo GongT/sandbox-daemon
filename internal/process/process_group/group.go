@@ -2,6 +2,7 @@ package process_group
 
 import (
 	_ "embed"
+	"errors"
 	"os/exec"
 	"strconv"
 	"sync"
@@ -23,10 +24,10 @@ type ProcessGroup struct {
 	beforeStart func(*exec.Cmd)
 	overlayRoot string
 
-	mu sync.Mutex
+	mu sync.RWMutex
 }
 
-func NewProcessGroup() *ProcessGroup {
+func New() *ProcessGroup {
 	return &ProcessGroup{
 		child_processes: process_list.New(),
 	}
@@ -53,13 +54,20 @@ func (pg *ProcessGroup) SetOverlayRoot(root string) {
 }
 
 func (pg *ProcessGroup) _assert_not_started() {
+	pg.mu.RLock()
+	defer pg.mu.RUnlock()
+
 	if pg.leaderInstance != nil {
 		panic("进程组已经启动，不能再修改启动信息")
 	}
 }
 
+func (pg *ProcessGroup) StopAll() error {
+	return pg.child_processes.StopAll()
+}
+
 // 创建一个新的进程实例，并将其注册到进程组中，但不启动它
-func (pg *ProcessGroup) CreateProcess(cmdline []string) *instance.ProcessInstance {
+func (pg *ProcessGroup) CreateProcess(cmdline []string) (*instance.ProcessInstance, error) {
 	pg.mu.Lock()
 	defer pg.mu.Unlock()
 
@@ -76,17 +84,22 @@ func (pg *ProcessGroup) CreateProcess(cmdline []string) *instance.ProcessInstanc
 
 		pg.leaderInstance = proc
 	} else {
-		wrap := nsenter(pg.leaderInstance.GetPid(), pg.cwd, cmdline)
+		pid := pg.leaderInstance.GetPid()
+		if pid == 0 {
+			return nil, errors.New("leader进程还没有启动，无法创建子进程")
+		}
+
+		wrap := nsenter(pid, pg.cwd, cmdline)
 		// log.Printf("创建子进程: %v", wrap)
 		proc = instance.New(wrap)
 		proc.SetEnv(pg.env)
 	}
 	pg.child_processes.Register(proc)
 
-	proc.SetDir("/")
+	proc.SetDir("/") // 使用了mountns，loader的工作目录没有意义
 	proc.SetBeforeStartHook(pg.beforeStart)
 
-	return proc
+	return proc, nil
 }
 
 func nsenter(leaderPid int, cwd string, cmdline []string) []string {

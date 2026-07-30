@@ -85,8 +85,7 @@ daemon:
     # 特殊值 inherit: 复制到daemon的stdio，stdout/stderr默认、all不支持
     stdout:
       - https://example.com/log
-    stderr:
-
+    stderr: unix:///tmp/error.log
       
     # all是stdin+stdout合并结果，默认无
     all:

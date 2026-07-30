@@ -1,11 +1,15 @@
 package instance
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"syscall"
 	"time"
+
+	"github.com/gongt/sandbox-daemon/internal/tools"
+	"github.com/pkg/errors"
 )
 
 type ProcessInstance struct {
@@ -21,6 +25,9 @@ type ProcessInstance struct {
 }
 
 func New(cmdline []string) *ProcessInstance {
+	if len(cmdline) == 0 {
+		panic("命令行不能为空")
+	}
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 	if cmd.SysProcAttr == nil {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
@@ -118,19 +125,38 @@ func (mc *ProcessInstance) Start() error {
 	// log.Printf("启动进程: %v", mc.internal.Args)
 	err := mc.internal.Start()
 	if err != nil {
+		if err.Error() == "exec: already started" {
+			return errors.WithMessage(err, "重复调用Start()")
+		}
+
 		mc.err = err
-		return err
+		close(mc.done)
+		return errors.WithStack(err)
 	}
 
 	go func() {
 		mc.err = mc.internal.Wait()
+		tools.DebugLog("ProcessInstance: 进程[%s]已退出", mc.String())
 		close(mc.done)
 	}()
 
 	return nil
 }
 
+func (mc *ProcessInstance) String() string {
+	if mc.everStarted {
+		if mc.IsExited() {
+			return fmt.Sprintf("进程%d退出码%d", mc.GetPid(), mc.internal.ProcessState.ExitCode())
+		} else {
+			return fmt.Sprintf("进程%d", mc.GetPid())
+		}
+	} else {
+		return fmt.Sprintf("未启动%v命令", mc.internal.Args[0])
+	}
+}
+
 func (mc *ProcessInstance) Stop() error {
+	defer mc.Join()
 	if mc.killer != nil {
 		return mc.killer(mc)
 	} else {

@@ -2,13 +2,6 @@ package config
 
 import "github.com/pkg/errors"
 
-type StopMethod string
-
-const (
-	StopMethodKill    StopMethod = "kill"
-	StopMethodCommand StopMethod = "command"
-)
-
 type ExecConfig struct {
 	Cmdline []string `config:"exec.cmdline"`
 	Cwd     string   `config:"exec.cwd"`
