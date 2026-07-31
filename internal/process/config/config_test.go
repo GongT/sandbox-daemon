@@ -2,7 +2,6 @@ package config
 
 import (
 	_ "embed"
-	"log"
 	"testing"
 
 	"github.com/goforj/godump"
@@ -11,14 +10,15 @@ import (
 	"golang.org/x/sys/unix"
 
 	assets "github.com/gongt/sandbox-daemon"
-	internalconfig "github.com/gongt/sandbox-daemon/internal/config"
+	"github.com/gongt/sandbox-daemon/packages/config_loader"
+	"github.com/gongt/sandbox-daemon/packages/myenv"
 )
 
 func TestProcessConfigLoad(t *testing.T) {
-	log.SetOutput(t.Output())
+	myenv.RedirectDebugTesting(t)
 
 	cfg := LifecycleConfig{}
-	err := internalconfig.LoadConfigContent(assets.ExampleConfigYAML, &cfg.exec, &cfg.stop, &cfg.environments, &cfg.hooks)
+	err := config_loader.LoadConfigContent(assets.ExampleConfigYAML, &cfg.exec, &cfg.stop, &cfg.environments, &cfg.hooks)
 	require.Error(t, err, "不支持指定")
 
 	godump.Fdump(t.Output(), cfg)
@@ -32,7 +32,7 @@ func TestProcessConfigLoad(t *testing.T) {
 }
 
 func TestInvalidSignal(t *testing.T) {
-	log.SetOutput(t.Output())
+	myenv.RedirectDebugTesting(t)
 
 	yml := `
 stop:
@@ -41,6 +41,6 @@ stop:
 `
 
 	cfg := LifecycleConfig{}
-	err := internalconfig.LoadConfigContent(yml, &cfg.exec)
+	err := config_loader.LoadConfigContent(yml, &cfg.exec)
 	require.Error(t, err)
 }

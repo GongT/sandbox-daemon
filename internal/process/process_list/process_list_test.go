@@ -1,10 +1,10 @@
 package process_list
 
 import (
-	"log"
 	"testing"
 	"time"
 
+	"github.com/gongt/sandbox-daemon/packages/myenv"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,7 +52,7 @@ func (mp *mockProcess) Stop() error {
 }
 
 func TestProcessList_Start(t *testing.T) {
-	log.SetOutput(t.Output())
+	myenv.RedirectDebugTesting(t)
 
 	list1 := New()
 	list1.Register(mock(1*time.Second, nil))

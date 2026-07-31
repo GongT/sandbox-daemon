@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/gongt/sandbox-daemon/internal/tools"
+	"github.com/gongt/sandbox-daemon/packages/logger"
 	"gitlab.com/tozd/go/errors"
 )
 
@@ -38,7 +38,7 @@ func (pl *ProcessList) Register(instance stoppable) int {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()
 
-	tools.DebugLog("ProcessList.Register: 注册进程 %s (当前%d个)", maybe_string(instance), len(pl.instances))
+	logger.DProcListF("ProcessList.Register: 注册进程 %s (当前%d个)", maybe_string(instance), len(pl.instances))
 	box := &processBox{
 		instance: instance,
 		notify:   make(chan struct{}),
@@ -81,11 +81,11 @@ func (pl *ProcessList) StopAll() error {
 	for {
 		box := peek()
 		if box == nil {
-			tools.DebugLog("ProcessList.StopAll: 已全部停止")
+			logger.DProcList("ProcessList.StopAll: 已全部停止")
 			break
 		}
 
-		tools.DebugLog("ProcessList.StopAll: 停止进程 %s", maybe_string(box.instance))
+		logger.DProcListF("ProcessList.StopAll: 停止进程 %s", maybe_string(box.instance))
 
 		err := box.instance.Stop()
 
@@ -95,7 +95,7 @@ func (pl *ProcessList) StopAll() error {
 
 		<-box.notify
 
-		tools.DebugLog("ProcessList.StopAll: 进程 %s 已停止", maybe_string(box.instance))
+		logger.DProcListF("ProcessList.StopAll: 进程 %s 已停止", maybe_string(box.instance))
 	}
 
 	return errors.Join(errs...)

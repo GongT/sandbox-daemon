@@ -1,15 +1,15 @@
 package environ
 
 import (
-	"log"
 	"testing"
 
 	"github.com/goforj/godump"
+	"github.com/gongt/sandbox-daemon/packages/myenv"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEnvironmentManager(t *testing.T) {
-	log.SetOutput(t.Output())
+	myenv.RedirectDebugTesting(t)
 
 	cfg := ManagerConfig{
 		Add: map[string]string{

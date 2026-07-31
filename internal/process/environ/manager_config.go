@@ -3,7 +3,7 @@ package environ
 import (
 	"maps"
 
-	"github.com/gongt/sandbox-daemon/internal/tools/types"
+	"github.com/gongt/sandbox-daemon/packages/tools/types"
 	"github.com/pkg/errors"
 )
 

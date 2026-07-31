@@ -21,70 +21,84 @@ type LineDestination interface {
 	Destroy() error
 }
 
-// 里面实际只有3个指针，调用方不需要*DestinationSpec
-type DestinationSpec struct {
+type DestinationSpec interface {
+	Raw() string
+	Get(key string) string
+	Has(key string) bool
+	GetBool(key string) bool
+
+	Scheme() string
+	Username() string
+	Password() string
+	Hostname() string
+	Port() int
+	Domain() string
+	Path() string
+	Fragment() string
+}
+
+type destinationSpec struct {
 	raw   string
 	url   *url.URL
-	query *url.Values
+	query url.Values
 }
 
-func NewDestination(raw string) (*DestinationSpec, error) {
-	u, err := url.Parse(raw)
-	if err != nil {
+func NewDestination(raw string) (DestinationSpec, error) {
+	spec := &destinationSpec{raw: raw}
+	if err := spec._init(); err != nil {
 		return nil, err
 	}
-	query, err := url.ParseQuery(u.RawQuery)
-	if err != nil {
-		return nil, err
-	}
-	spec := DestinationSpec{
-		raw:   raw,
-		url:   u,
-		query: &query,
-	}
-
-	return &spec, nil
+	return spec, nil
 }
 
-func (s *DestinationSpec) FromString(str string) error {
-	spec, err := NewDestination(str)
-	if err != nil {
-		return err
-	}
-	*s = *spec
-	return nil
+func (s *destinationSpec) FromString(str string) error {
+	s.raw = str
+	return s._init()
 }
 
-func (s *DestinationSpec) Raw() string {
+func (s *destinationSpec) _init() (err error) {
+	s.url, err = url.Parse(s.raw)
+	if err != nil {
+		return
+	}
+	if s.url.RawQuery != "" {
+		s.query, err = url.ParseQuery(s.url.RawQuery)
+	} else {
+		s.query = make(url.Values)
+	}
+	return
+}
+
+func (s *destinationSpec) Raw() string {
 	return s.raw
 }
 
-func (s *DestinationSpec) Get(key string) string {
+func (s *destinationSpec) Get(key string) string {
 	return s.query.Get(key)
 }
 
-func (s *DestinationSpec) Has(key string) bool {
+func (s *destinationSpec) Has(key string) bool {
 	return s.query.Has(key)
 }
 
-func (s *DestinationSpec) GetBool(key string) bool {
+func (s *destinationSpec) GetBool(key string) bool {
 	b, _ := strconv.ParseBool(s.query.Get(key))
 	return b
 }
 
 // clone URL methods
-func (s *DestinationSpec) Scheme() string {
+func (s *destinationSpec) Scheme() string {
 	return s.url.Scheme
 }
 
-func (s *DestinationSpec) Username() string {
+func (s *destinationSpec) Username() string {
 	if s.url.User == nil {
 		return ""
 	}
 	return s.url.User.Username()
 }
 
-func (s *DestinationSpec) Password() string {
+func (s *destinationSpec) Password() string {
 	if s.url.User == nil {
 		return ""
 	}
@@ -92,11 +106,11 @@ func (s *DestinationSpec) Password() string {
 	return password
 }
 
-func (s *DestinationSpec) Hostname() string {
+func (s *destinationSpec) Hostname() string {
 	return s.url.Hostname()
 }
 
-func (s *DestinationSpec) Port() int {
+func (s *destinationSpec) Port() int {
 	p := s.url.Port()
 	if p == "" {
 		return -1
@@ -108,14 +122,14 @@ func (s *DestinationSpec) Port() int {
 	return port
 }
 
-func (s *DestinationSpec) Domain() string {
+func (s *destinationSpec) Domain() string {
 	return s.url.Host
 }
 
-func (s *DestinationSpec) Path() string {
+func (s *destinationSpec) Path() string {
 	return s.url.Path
 }
 
-func (s *DestinationSpec) Fragment() string {
+func (s *destinationSpec) Fragment() string {
 	return s.url.Fragment
 }

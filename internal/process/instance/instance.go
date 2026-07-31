@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gongt/sandbox-daemon/internal/tools"
+	"github.com/gongt/sandbox-daemon/packages/logger"
 	"github.com/pkg/errors"
 )
 
@@ -136,7 +136,7 @@ func (mc *ProcessInstance) Start() error {
 
 	go func() {
 		mc.err = mc.internal.Wait()
-		tools.DebugLog("ProcessInstance: 进程[%s]已退出", mc.String())
+		logger.DProcF("ProcessInstance: 进程[%s]已退出", mc.String())
 		close(mc.done)
 	}()
 

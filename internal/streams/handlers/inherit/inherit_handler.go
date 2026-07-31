@@ -7,7 +7,7 @@ import (
 
 	"github.com/gongt/sandbox-daemon/internal/streams/ioconfig"
 	"github.com/gongt/sandbox-daemon/internal/streams/linetype"
-	"github.com/gongt/sandbox-daemon/internal/tools/syscall_helpers"
+	"github.com/gongt/sandbox-daemon/packages/tools/syscall_helpers"
 	"github.com/pkg/errors"
 )
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// 此结构需要经过channel传递
 type LineData struct {
 	// 文本数据
 	Line string

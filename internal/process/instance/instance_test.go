@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gongt/sandbox-daemon/packages/myenv"
 	"github.com/stretchr/testify/require"
 )
 
 func TestInstance(t *testing.T) {
-	log.SetOutput(t.Output())
+	myenv.RedirectDebugTesting(t)
 
 	proc := New([]string{"echo", "hello"})
 	require.Equal(t, 0, proc.GetPid())
@@ -28,7 +29,7 @@ func TestInstance(t *testing.T) {
 }
 
 func TestInstanceStop(t *testing.T) {
-	log.SetOutput(t.Output())
+	myenv.RedirectDebugTesting(t)
 
 	proc := New([]string{"sleep", "infinity"})
 	require.NoError(t, proc.Start())
@@ -57,7 +58,7 @@ func (mc *ProcessInstance) waitForTest(t *testing.T) {
 }
 
 func TestErrorInstance(t *testing.T) {
-	log.SetOutput(t.Output())
+	myenv.RedirectDebugTesting(t)
 
 	proc := New([]string{"nonexistent_command"})
 	require.Error(t, proc.Start())

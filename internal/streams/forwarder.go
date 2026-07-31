@@ -4,9 +4,10 @@ import (
 	"io"
 	"sync"
 
+	"github.com/gongt/sandbox-daemon/internal/streams/handlers"
 	"github.com/gongt/sandbox-daemon/internal/streams/ioconfig"
 	"github.com/gongt/sandbox-daemon/internal/streams/linetype"
-	"github.com/gongt/sandbox-daemon/internal/tools"
+	"github.com/gongt/sandbox-daemon/packages/tools"
 )
 
 type holder struct {
@@ -54,7 +55,7 @@ func NewMultiplexer() *LineMultiplexer {
 }
 
 func (m *LineMultiplexer) AddDestination(target ioconfig.DestinationSpec) (io.Closer, error) {
-	dest, err := CreateForwarder(target)
+	dest, err := handlers.CreateForwarder(target)
 	if err != nil {
 		return nil, err
 	}

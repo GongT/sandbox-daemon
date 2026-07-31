@@ -21,7 +21,7 @@ func (s *StdioConfig) Validate() error {
 		if err != nil {
 			panic(err)
 		}
-		s.Stdout = append(s.Stdout, *dest)
+		s.Stdout = append(s.Stdout, dest)
 	}
 
 	if len(s.Stderr) == 0 {
@@ -29,7 +29,7 @@ func (s *StdioConfig) Validate() error {
 		if err != nil {
 			panic(err)
 		}
-		s.Stderr = append(s.Stderr, *dest)
+		s.Stderr = append(s.Stderr, dest)
 	}
 
 	s.unique()

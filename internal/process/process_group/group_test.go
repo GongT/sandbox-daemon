@@ -2,7 +2,6 @@ package process_group
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,11 +9,12 @@ import (
 	"time"
 
 	"github.com/gongt/sandbox-daemon/internal/process/instance"
+	"github.com/gongt/sandbox-daemon/packages/myenv"
 	"github.com/stretchr/testify/require"
 )
 
 func TestProcessGroup(t *testing.T) {
-	log.SetOutput(t.Output())
+	myenv.RedirectDebugTesting(t)
 
 	g := New()
 
