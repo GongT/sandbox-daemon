@@ -1,6 +1,7 @@
 package reflection
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/gongt/sandbox-daemon/packages/logger"
@@ -73,6 +74,30 @@ func IndirectValue(v reflect.Value) reflect.Value {
 		v = v.Elem()
 	}
 	return v
+}
+
+func IndirectAny(v any) any {
+	rv := reflect.ValueOf(v)
+	for rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			panic(fmt.Sprintf("IndirectAny遇到nil，v=%#v", v))
+		}
+		rv = rv.Elem()
+	}
+	return rv.Interface()
+}
+
+// 返回任意层级指针指向的数据值的地址
+// 如果任意层指针中有nil，则返回nil
+func IndirectAnyPointer(v any) any {
+	rv := reflect.ValueOf(v)
+	for rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return nil
+		}
+		rv = rv.Elem()
+	}
+	return rv.Addr().Interface()
 }
 
 // 创建一个新的空值，与EmptyValue不同，EmptyValue是一个零值，可能是nil，而NewValue是一个新的实例

@@ -18,6 +18,7 @@ require (
 	github.com/goforj/godump v1.9.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-reap v0.0.0-20260220095743-4e27870b4f51
+	github.com/jessevdk/go-flags v1.6.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.19.0

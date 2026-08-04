@@ -48,10 +48,10 @@
 
 会准备好运行环境、日志系统
 
-如果有-program，则还会立即启动主程序
+如果配置文件中有exec，则会启动主程序
 
 ```bash
-sb init [-dir /var/run/sandbox-daemon] [-program /app/my-program.yaml]
+sb init [-dir /var/run/sandbox-daemon] [-config /app/my-program.yaml]
 ```
 
 2. 启动、停止
