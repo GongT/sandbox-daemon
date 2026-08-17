@@ -5,19 +5,19 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/gongt/sandbox-daemon/packages/streams/ioconfig"
+	io_streams "github.com/gongt/sandbox-daemon/packages/streams"
 )
 
 type StdioConfig struct {
-	Stdin  bool                       `config:"stdin"`
-	Stdout []ioconfig.DestinationSpec `config:"stdout"`
-	Stderr []ioconfig.DestinationSpec `config:"stderr"`
-	All    []ioconfig.DestinationSpec `config:"all"`
+	Stdin  bool                         `config:"stdin"`
+	Stdout []io_streams.DestinationSpec `config:"stdout"`
+	Stderr []io_streams.DestinationSpec `config:"stderr"`
+	All    []io_streams.DestinationSpec `config:"all"`
 }
 
 func (s *StdioConfig) Validate() error {
 	if len(s.Stdout) == 0 {
-		dest, err := ioconfig.NewDestination("inherit://stdout")
+		dest, err := io_streams.NewDestination("inherit://stdout")
 		if err != nil {
 			panic(err)
 		}
@@ -25,7 +25,7 @@ func (s *StdioConfig) Validate() error {
 	}
 
 	if len(s.Stderr) == 0 {
-		dest, err := ioconfig.NewDestination("inherit://stderr")
+		dest, err := io_streams.NewDestination("inherit://stderr")
 		if err != nil {
 			panic(err)
 		}
@@ -38,7 +38,7 @@ func (s *StdioConfig) Validate() error {
 }
 
 func (s *StdioConfig) unique() {
-	stdout := make(map[string]ioconfig.DestinationSpec)
+	stdout := make(map[string]io_streams.DestinationSpec)
 	for _, dest := range s.Stdout {
 		key := dest.Raw()
 		if _, ok := stdout[key]; !ok {
@@ -48,7 +48,7 @@ func (s *StdioConfig) unique() {
 		}
 	}
 
-	stderr := make(map[string]ioconfig.DestinationSpec)
+	stderr := make(map[string]io_streams.DestinationSpec)
 	for _, dest := range s.Stderr {
 		key := dest.Raw()
 		if _, ok := stderr[key]; !ok {
@@ -58,7 +58,7 @@ func (s *StdioConfig) unique() {
 		}
 	}
 
-	all := make(map[string]ioconfig.DestinationSpec)
+	all := make(map[string]io_streams.DestinationSpec)
 	for _, dest := range s.All {
 		key := dest.Raw()
 		if _, ok := all[key]; !ok {

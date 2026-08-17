@@ -19,7 +19,7 @@ func New() *mainProcess {
 
 func (m *mainProcess) Start() error {
 	if m.pg != nil {
-		return errors.New("main process already started")
+		return errors.New("主进程已启动，无法重复启动")
 	}
 	m.pg = process_group.New()
 
@@ -27,6 +27,9 @@ func (m *mainProcess) Start() error {
 }
 
 func (m *mainProcess) Stop() error {
+	if m.pg == nil {
+		return errors.New("主进程未启动，无法停止")
+	}
 	err := m.pg.StopAll()
 	m.pg = nil
 	return err

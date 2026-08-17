@@ -1,64 +1,44 @@
 package daemon
 
 import (
-	"errors"
-	"os/signal"
-	"sync"
-	"syscall"
+	"log"
 
 	"github.com/gongt/sandbox-daemon/packages/daemon/internal"
-	"github.com/gongt/sandbox-daemon/packages/daemon/internal/main_process"
-	"github.com/gongt/sandbox-daemon/packages/daemon/internal/reap"
-	"github.com/gongt/sandbox-daemon/packages/daemon/internal/rpc"
+	"github.com/gongt/sandbox-daemon/packages/daemon/internal/instance"
+	"github.com/gongt/sandbox-daemon/packages/myenv"
+	"github.com/pkg/errors"
 )
 
-type DaemonInstance struct {
-	mu sync.RWMutex
+var d *instance.D
 
-	parts []internal.DaemonComponent
+type InitCommand struct {
+	internal.WithSessionCommand
 }
 
-var instance *DaemonInstance
-
-func StartDaemon() *DaemonInstance {
-	if instance != nil {
+func (config *InitCommand) Run(runtime *myenv.GlobalOptions) error {
+	if d != nil {
 		panic("DaemonInstance: 只能启动一个守护进程实例")
 	}
-	instance = &DaemonInstance{}
 
-	// 防止stdout、stderr被关闭时，程序直接退出
-	signal.Reset(syscall.SIGPIPE)
+	d = instance.New(&config.WithSessionCommand, runtime)
 
-	rpcServer := rpc.NewServer()
-	reaper := reap.New()
-	mp := main_process.New()
+	log.Printf("守护进程已启动，session_id: %s", config.SessionId.String())
+	d.Join()
 
-	instance.parts = []internal.DaemonComponent{
-		rpcServer,
-		reaper,
-		mp,
+	err := d.Destroy()
+	if err != nil {
+		return errors.Wrap(err, "退出时出现问题")
 	}
 
-	return instance
+	return nil
 }
 
-func GetDaemon() *DaemonInstance {
-	return instance
+func GetDaemon() *instance.D {
+	return d
 }
 
-func (pm *DaemonInstance) Destroy() error {
-	pm.mu.Lock()
-	defer pm.mu.Unlock()
-
-	errs := []error{}
-	for _, part := range pm.parts {
-		err := part.Stop()
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	instance = nil
-
-	return errors.Join(errs...)
+func Destroy() error {
+	err := d.Destroy()
+	d = nil
+	return err
 }

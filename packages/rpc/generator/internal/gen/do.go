@@ -3,6 +3,7 @@ package gen
 import (
 	"log"
 
+	"github.com/gongt/sandbox-daemon/packages/logger"
 	"github.com/gongt/sandbox-daemon/packages/rpc/generator/internal/args"
 	"github.com/iancoleman/strcase"
 	"gitlab.com/tozd/go/errors"
@@ -45,6 +46,7 @@ func handleFile(ctx generateContext, file string) error {
 	if astFile.Decls == nil {
 		return errors.Errorf("文件 %s 没有声明", file)
 	}
+	logger.DLogF("包: %s\n", astFile.Name.Name)
 
 	types := findTypes(astFile)
 	if len(types) == 0 {
