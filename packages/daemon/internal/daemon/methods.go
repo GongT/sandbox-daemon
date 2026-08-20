@@ -3,6 +3,7 @@ package instance
 import (
 	"os"
 
+	"github.com/gongt/sandbox-daemon/packages/daemon/internal/main_process/mp_config"
 	"github.com/gongt/sandbox-daemon/packages/rpc/rpc_server"
 )
 
@@ -12,7 +13,12 @@ func (*D) ReExecDaemon() {
 
 // 检查守护进程是否存活
 func (d *D) Ping() (string, error) {
-	return d.sessionId, nil
+	return d.session_id, nil
+}
+
+// 启动主进程
+func (*D) LaunchMainProcess(config mp_config.LifecycleConfig) error {
+	return nil
 }
 
 // 停止主进程

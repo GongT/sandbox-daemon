@@ -1,14 +1,14 @@
 package reap
 
 import (
+	"io"
 	"log"
 	"sync"
 
-	"github.com/gongt/sandbox-daemon/packages/daemon/internal"
 	"github.com/hashicorp/go-reap"
 )
 
-var _ internal.DaemonComponent = (*processReaper)(nil)
+var _ io.Closer = (*processReaper)(nil)
 
 type processReaper struct {
 	mu   sync.RWMutex
@@ -53,7 +53,7 @@ func (r *processReaper) Start() error { // 进程回收
 	return nil
 }
 
-func (r *processReaper) Stop() error {
+func (r *processReaper) Close() error {
 	close(r.done)
 	return nil
 }

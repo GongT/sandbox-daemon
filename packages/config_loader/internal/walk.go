@@ -109,11 +109,15 @@ func walkValue(vPtr reflect.Value, path paths.TwoPath, ctx context.ConfigFillCon
 		logger.DConfigF("[walk] 结构体: %s | %s", path.String(), vPtr.Elem().Type().String())
 		subHas, err = walkStruct(vPtr, path, ctx)
 	case reflect.Slice, reflect.Array:
-		logger.DConfigF("[walk] 数组/切片: %s | %s", path.String(), vPtr.Elem().Type().String())
-		subHas, err = walkSlice(vPtr, path, ctx)
+		if hasValue {
+			logger.DConfigF("[walk] 数组/切片: %s | %s", path.String(), vPtr.Elem().Type().String())
+			subHas, err = walkSlice(vPtr, path, ctx)
+		}
 	case reflect.Map:
-		logger.DConfigF("[walk] Map: %s | %s", path.String(), vPtr.Elem().Type().String())
-		subHas, err = walkMap(vPtr, path, ctx)
+		if hasValue {
+			logger.DConfigF("[walk] Map: %s | %s", path.String(), vPtr.Elem().Type().String())
+			subHas, err = walkMap(vPtr, path, ctx)
+		}
 	case reflect.Invalid, reflect.Chan, reflect.Func, reflect.Interface, reflect.Pointer, reflect.UnsafePointer:
 		err = errors.Errorf("无法处理%s类型", type_name.TranslateType(vPtr.Type()))
 	default:

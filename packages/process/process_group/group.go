@@ -66,6 +66,13 @@ func (pg *ProcessGroup) StopAll() error {
 	return pg.child_processes.StopAll()
 }
 
+func (pg *ProcessGroup) GetLeader() *instance.ProcessInstance {
+	pg.mu.RLock()
+	defer pg.mu.RUnlock()
+
+	return pg.leaderInstance
+}
+
 // 创建一个新的进程实例，并将其注册到进程组中，但不启动它
 func (pg *ProcessGroup) CreateProcess(cmdline []string) (*instance.ProcessInstance, error) {
 	pg.mu.Lock()

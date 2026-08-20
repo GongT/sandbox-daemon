@@ -4,5 +4,5 @@ import (
 	_ "embed"
 )
 
-//go:embed example.yaml
+//go:embed configs/example.yaml
 var ExampleConfigYAML string

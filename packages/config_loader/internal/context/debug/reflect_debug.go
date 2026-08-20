@@ -22,7 +22,7 @@ func NewLoggingContext(oCtx context.ConfigFillContext) *loggingContext {
 
 func (l *loggingContext) HasValue(tagPath paths.ConfigPath) (bool, error) {
 	if true {
-		log.Printf("[HasValue] %s", tagPath.JoinWithDot(""))
+		log.Printf("[HasValue] `%s`", tagPath.JoinWithDot(""))
 	}
 	r, err := l.oCtx.HasValue(tagPath)
 
@@ -36,7 +36,7 @@ func (l *loggingContext) HasValue(tagPath paths.ConfigPath) (bool, error) {
 
 func (l *loggingContext) GetArraySize(tagPath paths.ConfigPath) (size int, err error) {
 	if true {
-		log.Printf("[getArraySize]  %s", tagPath.JoinWithDot(""))
+		log.Printf("[getArraySize]  `%s`", tagPath.JoinWithDot(""))
 	}
 	size, err = l.oCtx.GetArraySize(tagPath)
 	if err != nil {
@@ -49,7 +49,7 @@ func (l *loggingContext) GetArraySize(tagPath paths.ConfigPath) (size int, err e
 
 func (l *loggingContext) GetObjectKeys(tagPath paths.ConfigPath) (keys []string, err error) {
 	if true {
-		log.Printf("[getObjectKeys] %s", tagPath.JoinWithDot(""))
+		log.Printf("[getObjectKeys] `%s`", tagPath.JoinWithDot(""))
 	}
 	keys, err = l.oCtx.GetObjectKeys(tagPath)
 	if err != nil {
@@ -62,7 +62,7 @@ func (l *loggingContext) GetObjectKeys(tagPath paths.ConfigPath) (keys []string,
 
 func (l *loggingContext) GetValue(t reflect.Type, tagPath paths.ConfigPath) (value any, err error) {
 	if true {
-		log.Printf("[getValue] %s | %s", tagPath.JoinWithDot(""), t.String())
+		log.Printf("[getValue] `%s` | `%s`", tagPath.JoinWithDot(""), t.String())
 	}
 	value, err = l.oCtx.GetValue(t, tagPath)
 	if err != nil {

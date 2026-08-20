@@ -42,6 +42,10 @@
 
 # 使用方法
 
+0. 通用参数
+
+* `--dir`: `/var/run/sandbox-daemon` 运行文件目录，必须统一
+
 1. 启动守护进程
 
 通常在构建template的最终运行阶段执行
@@ -51,32 +55,32 @@
 如果配置文件中有exec，则会启动主程序
 
 ```bash
-sb init [-dir /var/run/sandbox-daemon] [-config /app/my-program.yaml]
+sb init [--config /app/my-program.yaml]
 ```
 
 2. 启动、停止
 
 读取配置文件中的主程序配置，让init进程启动它，可选等待启动完成。
 
-如果已有主程序，则报错；除非设置了-replace参数。
+如果已有主程序，则报错；除非设置了--replace参数。
 
-* -log: 桥接输出到当前终端，方便调试
-* -wait: 等待主程序启动完成
+* --log: 桥接输出到当前终端，方便调试
+* --wait: 等待主程序启动完成
 
 ```bash
-sb start [-dir /var/run/sandbox-daemon] [-replace] [-log] [-wait]
+sb start [--replace] [--log] [--wait] --config /app/my-program.yaml
 ```
 
 停止主程序，如果未运行，直接返回成功
 
 ```bash
-sb stop [-dir /var/run/sandbox-daemon]
+sb stop
 ```
 
-判断主程序是否存在，如果设置-signal，则向主程序发送指定信号
+判断主程序是否存在，如果设置--signal，则向主程序发送指定信号
 
 ```bash
-sb kill [-dir /var/run/sandbox-daemon] [-signal SIUHUP]
+sb kill [--signal XXX]
 ```
 
 3. 桥接stdio
@@ -86,7 +90,7 @@ sb kill [-dir /var/run/sandbox-daemon] [-signal SIUHUP]
 按Ctrl+C退出，不会终止主程序
 
 ```bash
-sb attach [-dir /var/run/sandbox-daemon] [-ro]
+sb attach [-ro]
 ```
 
 4. 在主程序空间运行其他程序
@@ -104,9 +108,9 @@ sb attach [-dir /var/run/sandbox-daemon] [-ro]
 * -noenv: 不应用主程序的环境变量设置
 
 ```bash
-sb exec [-dir /var/run/sandbox-daemon] [-wait] [-pipe] [-nons] [-noenv]
+sb exec [-wait] [-pipe] [-nons] [-noenv]
 ```
 
 # 主程序配置文件
 
-[./example.yaml](./example.yaml)是一个示例配置文件，包含了所有可用的配置项。
+[./configs/example.yaml](./configs/example.yaml)是一个示例配置文件，包含了所有可用的配置项。

@@ -46,17 +46,19 @@ func (ctx *configYamlContext) HasValue(tagPath paths.ConfigPath) (bool, error) {
 	if !exists {
 		ps, err := yaml.PathString(path)
 		if err != nil {
-			return false, errors.WithMessagef(err, "路径[%v]异常", path)
+			return false, errors.WithMessagef(err, "Yaml路径[%v]异常", path)
 		}
 
 		node, err = ps.FilterFile(ctx.astRoot)
 		if err == nil {
 			ctx.nCache[path] = node
 		} else {
-			if errors.Is(err, yaml.ErrNotFoundNode) {
+			if errors.Is(err, yaml.ErrNotFoundNode) || errors.Is(err, yaml.ErrInvalidQuery) {
+				// ErrNotFoundNode: 找不到这个路径
+				// ErrInvalidQuery: 路径上有object为null - 这个限定可能过于宽泛，不知道会不会漏错误
 				// node = nil
 			} else {
-				return false, errors.WithStack(err)
+				return false, errors.WithMessagef(err, "Yaml查询[%v]时出现错误", path)
 			}
 		}
 	}
@@ -70,13 +72,13 @@ func (ctx *configYamlContext) GetArraySize(tagPath paths.ConfigPath) (int, error
 	key := tagPath.JoinWithAccessor("$")
 
 	if node, exists := ctx.nCache[key]; !exists {
-		return 0, errors.Errorf("错误调用GetArraySize: 路径不存在")
+		return 0, errors.New("错误调用GetArraySize: Yaml路径不存在")
 	} else {
 		switch node := node.(type) {
 		case *ast.SequenceNode:
 			return len(node.Values), nil
 		default:
-			return 0, errors.Errorf("错误调用GetArraySize: 路径不是数组")
+			return 0, errors.New("错误调用GetArraySize: Yaml路径不是数组")
 		}
 	}
 }
@@ -85,7 +87,7 @@ func (ctx *configYamlContext) GetObjectKeys(tagPath paths.ConfigPath) ([]string,
 	key := tagPath.JoinWithAccessor("$")
 
 	if node, exists := ctx.nCache[key]; !exists {
-		return nil, errors.Errorf("错误调用GetObjectKeys: 路径不存在")
+		return nil, errors.New("错误调用GetObjectKeys: Yaml路径不存在")
 	} else {
 		switch node := node.(type) {
 		case *ast.MappingNode:
@@ -96,7 +98,7 @@ func (ctx *configYamlContext) GetObjectKeys(tagPath paths.ConfigPath) ([]string,
 			}
 			return keys, nil
 		default:
-			return nil, errors.Errorf("错误调用GetObjectKeys: 路径不是对象")
+			return nil, errors.New("错误调用GetObjectKeys: Yaml路径不是对象")
 		}
 	}
 }
@@ -106,7 +108,7 @@ func (ctx *configYamlContext) GetValue(t reflect.Type, tagPath paths.ConfigPath)
 
 	node, exists := ctx.nCache[key]
 	if !exists {
-		return "", errors.Errorf("错误调用GetValue: 路径不存在")
+		return "", errors.New("错误调用GetValue: Yaml路径不存在")
 	}
 
 	switch node := node.(type) {
@@ -119,6 +121,6 @@ func (ctx *configYamlContext) GetValue(t reflect.Type, tagPath paths.ConfigPath)
 	case *ast.FloatNode:
 		return node.Value, nil
 	default:
-		return nil, errors.Errorf("不支持将%s转换为%s", node.Type().String(), type_name.TranslateType(t))
+		return nil, errors.Errorf("Yaml不支持将%s转换为%s", node.Type().String(), type_name.TranslateType(t))
 	}
 }

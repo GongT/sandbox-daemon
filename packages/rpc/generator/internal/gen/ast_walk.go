@@ -2,10 +2,7 @@ package gen
 
 import (
 	"go/ast"
-	"go/parser"
 	"go/token"
-
-	"gitlab.com/tozd/go/errors"
 )
 
 func findTypes(file *ast.File) []string {
@@ -59,13 +56,4 @@ func validateReceiver(expr ast.Expr) string {
 		}
 	}
 	return ""
-}
-
-func readAst(file string) (*ast.File, error) {
-	fset := token.NewFileSet()
-	astFile, err := parser.ParseFile(fset, file, nil, parser.SkipObjectResolution+parser.ParseComments)
-	if err != nil {
-		return nil, errors.WithMessagef(err, "解析文件 %s 失败", file)
-	}
-	return astFile, nil
 }

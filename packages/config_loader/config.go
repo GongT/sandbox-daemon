@@ -14,7 +14,7 @@ import (
 	"gitlab.com/tozd/go/errors"
 )
 
-func LoadConfigFile(filename string, inputs ...interface{}) error {
+func LoadConfigFile(filename string, inputs ...any) error {
 	f, err := os.ReadFile(filename)
 	if err != nil {
 		return errors.WithMessagef(err, "读取配置文件%s失败", filename)
@@ -23,7 +23,7 @@ func LoadConfigFile(filename string, inputs ...interface{}) error {
 	return LoadConfigContent(string(f), inputs...)
 }
 
-func LoadConfigContent(content string, inputs ...interface{}) error {
+func LoadConfigContent(content string, inputs ...any) error {
 	content = strings.TrimSpace(content)
 
 	var ctx context.ConfigFillContext
@@ -69,7 +69,7 @@ func loadConfigInto(input any, ctx context.ConfigFillContext) error {
 		if sub, ok := ptr.(interfaces.Validator); ok {
 			err := sub.Validate()
 			if err != nil {
-				return errors.WithMessagef(err, "读取配置文件后验证失败")
+				return errors.WithMessage(err, "读取配置文件后验证失败")
 			}
 		}
 	}

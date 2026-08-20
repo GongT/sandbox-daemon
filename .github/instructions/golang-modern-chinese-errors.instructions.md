@@ -18,7 +18,8 @@ This repository is a Go project. Use English for all assistant explanations and 
 - Prefer modern Go syntax and standard-library capabilities available to the project version.
 - When multiple approaches are valid, choose the clearer and more idiomatic modern Go approach.
 - Use `require` and `assert` packages for testing, avoid directly calling `t.Xxx`.
-- Use `errors` package for error creation and wrapping.
+- Use `gitlab.com/tozd/go/errors` package for error creation and wrapping. Do not use `fmt.Errorf` or `errors` package from the standard library.
+    - When write a function returning an error, use `errors.E` instead of `error`
 
 ## Modern syntax examples
 
@@ -46,15 +47,15 @@ for i := 0; i < 100; i++ {}
 ```go
 // 正确: 注释使用中文，错误上下文使用中文，并保留原始错误
 if err := doWork(); err != nil {
-    return errors.Errorf("执行任务失败: %w", err)
+    return errors.WithMessage(err, "执行任务失败")
 }
 
 // 正确: 错误信息清晰且可定位
-return errors.Errorf("读取配置文件失败，路径=%s: %w", path, err)
+return errors.WithMessagef(err, "读取配置文件失败，路径=%s", path)
 ```
 
 ```go
 // 避免: 英文注释和英文错误信息
 // load config from file
-return errors.Errorf("failed to load config: %w", err)
+return errors.WithMessage(err, "failed to load config")
 ```

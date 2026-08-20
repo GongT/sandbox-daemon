@@ -143,6 +143,20 @@ func (mc *ProcessInstance) Start() error {
 	return nil
 }
 
+func (mc *ProcessInstance) GetResult() (*os.ProcessState, error) {
+	if mc.internal.ProcessState == nil {
+		return nil, errors.New("进程还没有退出（或从未启动），无法获取退出状态")
+	}
+	return mc.internal.ProcessState, nil
+}
+
+func (mc *ProcessInstance) MustResult() *os.ProcessState {
+	if mc.internal.ProcessState == nil {
+		panic("进程还没有退出（或从未启动），无法获取退出状态")
+	}
+	return mc.internal.ProcessState
+}
+
 func (mc *ProcessInstance) String() string {
 	if mc.everStarted {
 		if mc.IsExited() {

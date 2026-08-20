@@ -38,10 +38,10 @@ func (ctx *configJsonContext) GetArraySize(tagPath paths.ConfigPath) (int, error
 	path := tagPath.JoinWithDot("")
 	result := ctx.json.Get(path)
 	if !result.Exists() {
-		return 0, errors.Errorf("错误调用GetArraySize: 路径不存在")
+		return 0, errors.New("错误调用GetArraySize: 路径不存在")
 	}
 	if !result.IsArray() {
-		return 0, errors.Errorf("不是数组类型")
+		return 0, errors.New("不是数组类型")
 	}
 	return len(result.Array()), nil
 }
@@ -50,10 +50,10 @@ func (ctx *configJsonContext) GetObjectKeys(tagPath paths.ConfigPath) ([]string,
 	path := tagPath.JoinWithDot("")
 	result := ctx.json.Get(path)
 	if !result.Exists() {
-		return nil, errors.Errorf("错误调用GetObjectKeys: 路径不存在")
+		return nil, errors.New("错误调用GetObjectKeys: 路径不存在")
 	}
 	if !result.IsObject() {
-		return nil, errors.Errorf("不是对象类型")
+		return nil, errors.New("不是对象类型")
 	}
 
 	keys := slices.Collect(maps.Keys(result.Map()))
@@ -64,7 +64,7 @@ func (ctx *configJsonContext) GetValue(t reflect.Type, tagPath paths.ConfigPath)
 	path := tagPath.JoinWithDot("")
 	result := ctx.json.Get(path)
 	if !result.Exists() {
-		return "", errors.Errorf("错误调用GetValue: 路径不存在")
+		return "", errors.New("错误调用GetValue: 路径不存在")
 	}
 
 	switch t.Kind() {

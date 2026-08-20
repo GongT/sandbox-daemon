@@ -1,11 +1,12 @@
 module github.com/gongt/sandbox-daemon
 
-replace github.com/gongt/sandbox-daemon => .
+replace github.com/gongt/go => ../go
 
 go 1.26.3
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/gongt/go v0.0.0-20260820044619-836d7ff323e5 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -21,7 +22,7 @@ require (
 	github.com/hashicorp/go-reap v0.0.0-20260220095743-4e27870b4f51
 	github.com/jessevdk/go-flags v1.6.1
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.1
 	github.com/tidwall/gjson v1.19.0
 	gitlab.com/tozd/go/errors v0.11.1
 	golang.org/x/sys v0.47.0

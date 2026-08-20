@@ -3,3 +3,4 @@ plan.md
 .vscode/local-history
 go.sum
 *.generated.*
+/bin
